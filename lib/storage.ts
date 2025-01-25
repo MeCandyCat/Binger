@@ -21,6 +21,10 @@ export function getStoredMedia(): Media[] {
 
 export function storeMedia(media: Media[]) {
   if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(media))
+  const mediaToStore = media.map((item) => ({
+    ...item,
+    watchedAt: item.watchedAt.toISOString(),
+  }))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(mediaToStore))
 }
 

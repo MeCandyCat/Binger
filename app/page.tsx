@@ -14,7 +14,7 @@ import type { Media } from "@/types"
 import ErrorBoundary from "@/components/error-boundary"
 import { toast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, User } from "lucide-react"
+import { AlertCircle, User, MoreHorizontal, Filter, ArrowUpDown, FileJson } from "lucide-react"
 import { supabase, isSupabaseConfigured, getSupabaseErrorMessage } from "@/lib/supabase"
 import type { Session } from "@supabase/supabase-js"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,9 +26,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
-import { PlusCircleIcon } from 'lucide-react'
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { PlusCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
+import { MediaImportExportDialog } from "@/components/import-export-dialog"
 
 export function EmptyMediaState({}) {
   return (
@@ -36,12 +45,9 @@ export function EmptyMediaState({}) {
       <CardHeader className="items-center text-center">
         <PlusCircleIcon className="w-12 h-12 text-muted-foreground mb-4" />
         <CardTitle>Get Started</CardTitle>
-        <CardDescription>
-          Add Media to expand your collection
-        </CardDescription>
+        <CardDescription>Add Media to expand your collection</CardDescription>
       </CardHeader>
-      <CardContent className="flex justify-center">
-      </CardContent>
+      <CardContent className="flex justify-center"></CardContent>
     </Card>
   )
 }
@@ -53,6 +59,15 @@ export default function Home() {
   const [configError, setConfigError] = useState<string | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isSupabaseReady, setIsSupabaseReady] = useState(false)
+  const [isReorganizing, setIsReorganizing] = useState(false)
+  const [filteredMedia, setFilteredMedia] = useState<Media[]>([])
+  const [showExportImportDialog, setShowExportImportDialog] = useState(false)
+  const [activeFilters, setActiveFilters] = useState({
+    tmdbRating: "",
+    userRating: "",
+    dateAdded: "",
+  })
+  const [showImportDialog, setShowImportExportDialog] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -117,7 +132,7 @@ export default function Home() {
     }) || { data: { subscription: { unsubscribe: () => {} } } }
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [session]) // Added session to the dependency array
 
   const stats = {
     totalMinutes: media.reduce((acc, item) => acc + (item.customDuration || item.runtime), 0),
@@ -201,7 +216,7 @@ export default function Home() {
     }
   }
 
-  async function handleUpdateMedia(id: string, note: string, duration: number) {
+  async function handleUpdateMedia(id: string, note: string, duration: number, rating: number) {
     try {
       const updatedMedia = media.map((item) => {
         if (item.id === id) {
@@ -209,6 +224,7 @@ export default function Home() {
             ...item,
             note,
             customDuration: duration || item.runtime,
+            rating,
           }
         }
         return item
@@ -217,7 +233,7 @@ export default function Home() {
       if (isSupabaseReady && session) {
         const { error } = await supabase!
           .from("media")
-          .update({ note, customDuration: duration || undefined })
+          .update({ note, customDuration: duration || undefined, rating })
           .eq("id", id)
         if (error) throw error
       }
@@ -234,6 +250,111 @@ export default function Home() {
       toast({
         title: "Error",
         description: "Failed to update media. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const filterOptions = [
+    { name: "TMDB Rating", key: "tmdbRating", options: ["Top Rated", "Lowest Rated"] },
+    { name: "Your Rating", key: "userRating", options: ["Top Rated", "Lowest Rated"] },
+    { name: "Date Added", key: "dateAdded", options: ["Latest", "Oldest"] },
+  ]
+
+  function applyFilters(newFilters) {
+    setActiveFilters(newFilters)
+    const filtered = [...media]
+
+    if (newFilters.tmdbRating) {
+      filtered.sort((a, b) =>
+        newFilters.tmdbRating === "Top Rated" ? b.tmdbRating - a.tmdbRating : a.tmdbRating - b.tmdbRating,
+      )
+    }
+
+    if (newFilters.userRating) {
+      filtered.sort((a, b) => (newFilters.userRating === "Top Rated" ? b.rating - a.rating : a.rating - b.rating))
+    }
+
+    if (newFilters.dateAdded) {
+      filtered.sort((a, b) =>
+        newFilters.dateAdded === "Latest"
+          ? new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime()
+          : new Date(a.watchedAt).getTime() - new Date(b.watchedAt).getTime(),
+      )
+    }
+
+    setFilteredMedia(filtered)
+  }
+
+  function clearFilters() {
+    const clearedFilters = {
+      tmdbRating: "",
+      userRating: "",
+      dateAdded: "",
+    }
+    setActiveFilters(clearedFilters)
+    setFilteredMedia([])
+  }
+
+  function onDragEnd(result) {
+    if (!result.destination) return
+
+    const items = Array.from(media)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+
+    setMedia(items)
+    if (isSupabaseReady && session) {
+      // Update the order in Supabase
+      items.forEach((item, index) => {
+        supabase!.from("media").update({ order: index }).eq("id", item.id)
+      })
+    } else {
+      storeMedia(items)
+    }
+  }
+
+  async function importMedia(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (file) {
+      try {
+        const text = await file.text()
+        const importedMedia: Media[] = JSON.parse(text)
+        await handleImportMedia(importedMedia)
+      } catch (error) {
+        console.error("Error importing media:", error)
+        toast({
+          title: "Import Failed",
+          description: "There was an error importing the media. Please check the file and try again.",
+          variant: "destructive",
+        })
+      }
+    }
+    setShowExportImportDialog(false)
+  }
+
+  async function handleImportMedia(mediaToImport: Media[]) {
+    try {
+      const newMedia = mediaToImport.filter(
+        (importedItem) => !media.some((existingItem) => existingItem.id === importedItem.id),
+      )
+      const updatedMedia = [...media, ...newMedia]
+      setMedia(updatedMedia)
+      if (isSupabaseReady && session) {
+        const { error } = await supabase!.from("media").insert(newMedia)
+        if (error) throw error
+      } else {
+        storeMedia(updatedMedia)
+      }
+      toast({
+        title: "Import Successful",
+        description: `Added ${newMedia.length} new items to your library.`,
+      })
+    } catch (error) {
+      console.error("Error importing media:", error)
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing the media. Please try again.",
         variant: "destructive",
       })
     }
@@ -288,19 +409,83 @@ export default function Home() {
 
             <Stats totalMinutes={stats.totalMinutes} totalShows={stats.totalShows} totalMovies={stats.totalMovies} />
 
-            <h2 className="text-2xl font-bold mt-12 mb-4">Your Collection</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Collection</h2>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Filter className="mr-2 h-4 w-4" />
+                      <span>Filter</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <ScrollArea className="h-[300px]">
+                        {filterOptions.map((filterGroup) => (
+                          <div key={filterGroup.key}>
+                            <DropdownMenuLabel>{filterGroup.name}</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                              value={activeFilters[filterGroup.key]}
+                              onValueChange={(value) => {
+                                const newFilters = { ...activeFilters, [filterGroup.key]: value }
+                                applyFilters(newFilters)
+                              }}
+                            >
+                              <DropdownMenuRadioItem value="">All {filterGroup.name}</DropdownMenuRadioItem>
+                              {filterGroup.options.map((option) => (
+                                <DropdownMenuRadioItem key={option} value={option}>
+                                  {option}
+                                </DropdownMenuRadioItem>
+                              ))}
+                            </DropdownMenuRadioGroup>
+                            <DropdownMenuSeparator />
+                          </div>
+                        ))}
+                      </ScrollArea>
+                      <DropdownMenuItem onSelect={clearFilters}>Clear Filters</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuItem onSelect={() => setIsReorganizing(!isReorganizing)}>
+                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                    <span>{isReorganizing ? "Save Order" : "Re-Organize"}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setShowImportExportDialog(true)}>
+                    <FileJson className="mr-2 h-4 w-4" />
+                    <span>Import & Export</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
             {isLoading ? (
               <p>Loading your media library...</p>
             ) : (
-              media.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {media.map((item) => (
-                    <MediaCard key={item.id} media={item} onClick={() => setSelectedMedia(item)} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyMediaState />
-              )
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="media-list">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                    >
+                      {(filteredMedia.length > 0 ? filteredMedia : media).map((item, index) => (
+                        <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={!isReorganizing}>
+                          {(provided) => (
+                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                              <MediaCard media={item} onClick={() => setSelectedMedia(item)} />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
 
             <MediaSheet
@@ -309,6 +494,11 @@ export default function Home() {
               onDelete={handleDeleteMedia}
               onUpdate={handleUpdateMedia}
             />
+            
+            <MediaImportExportDialog
+              isOpen={showImportDialog}
+              onClose={() => setShowImportExportDialog(false)}
+              onImport={handleImportMedia} media={[]}            />
           </div>
         </div>
       </ThemeProvider>

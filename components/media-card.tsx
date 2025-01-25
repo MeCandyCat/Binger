@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import type { Media } from "@/types"
 import { Star } from "lucide-react"
 
@@ -16,16 +17,19 @@ export function MediaCard({ media, onClick }: MediaCardProps) {
           alt={media.title}
           className="object-cover w-full h-full"
         />
-        <div className="absolute top-2 right-2 bg-black/20 backdrop-blur-xl text-white px-2 py-1 rounded-full flex items-center gap-1">
-          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+        <Badge className="absolute top-2 right-2 bg-black/20 hover:bg-black/30 backdrop-blur-lg text-white flex items-center gap-1">
+          <Star className="w-3 h-3 text-yellow-400 fill-current" />
           <span>{media.rating.toFixed(1)}</span>
-        </div>
+        </Badge>
       </div>
       <CardContent className="p-4">
         <h3 className="font-semibold truncate">{media.title}</h3>
-        <p className="text-sm text-muted-foreground">
+        <Badge variant="outline">
+          {media.type === "tv" ? `TV` : `Movie`}
+        </Badge>
+        <Badge variant="outline">
           {media.type === "tv" ? `${media.seasons} Seasons` : `${media.customDuration || media.runtime} mins`}
-        </p>
+        </Badge>
       </CardContent>
     </Card>
   )

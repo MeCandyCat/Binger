@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: 'Binger',
-  description: 'Personal Movie Tracking App',
+  description: 'Personal Movie Tracker App',
 }
 
 export default function RootLayout({
@@ -15,17 +15,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-          {children}
-        <Toaster />
-        </ThemeProvider>
-      </body>
+        <body>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </body>
     </html>
   )
 }

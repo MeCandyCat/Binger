@@ -12,6 +12,10 @@ export type Media = {
   note?: string
   seasons?: number
   overview?: string
+  release_date?: string
+  first_air_date?: string
+  number_of_seasons?: number
+  order?: number
 }
 
 export type TMDBSearchResult = {
