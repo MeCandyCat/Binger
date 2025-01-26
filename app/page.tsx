@@ -14,7 +14,7 @@ import type { Media } from "@/types"
 import ErrorBoundary from "@/components/error-boundary"
 import { toast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, User, MoreHorizontal, Filter, ArrowUpDown, FileJson } from "lucide-react"
+import { AlertCircle, User, MoreHorizontal, Filter, ArrowUpDown, FileJson, Download } from "lucide-react"
 import { supabase, isSupabaseConfigured, getSupabaseErrorMessage } from "@/lib/supabase"
 import type { Session } from "@supabase/supabase-js"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,9 +35,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { PlusCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
-import { MediaImportExportDialog } from "@/components/import-export-dialog"
+import { ImportDialog } from "@/components/import-dialog"
 
 export function EmptyMediaState({}) {
   return (
@@ -61,13 +60,12 @@ export default function Home() {
   const [isSupabaseReady, setIsSupabaseReady] = useState(false)
   const [isReorganizing, setIsReorganizing] = useState(false)
   const [filteredMedia, setFilteredMedia] = useState<Media[]>([])
-  const [showExportImportDialog, setShowExportImportDialog] = useState(false)
   const [activeFilters, setActiveFilters] = useState({
     tmdbRating: "",
     userRating: "",
     dateAdded: "",
   })
-  const [showImportDialog, setShowImportExportDialog] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -314,44 +312,41 @@ export default function Home() {
     }
   }
 
-  async function importMedia(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (file) {
-      try {
-        const text = await file.text()
-        const importedMedia: Media[] = JSON.parse(text)
-        await handleImportMedia(importedMedia)
-      } catch (error) {
-        console.error("Error importing media:", error)
-        toast({
-          title: "Import Failed",
-          description: "There was an error importing the media. Please check the file and try again.",
-          variant: "destructive",
-        })
-      }
-    }
-    setShowExportImportDialog(false)
+  function exportMedia() {
+    const dataStr = JSON.stringify(media)
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
+    const exportFileDefaultName = "binger_media_export.json"
+
+    const linkElement = document.createElement("a")
+    linkElement.setAttribute("href", dataUri)
+    linkElement.setAttribute("download", exportFileDefaultName)
+    linkElement.click()
   }
 
   async function handleImportMedia(mediaToImport: Media[]) {
     try {
+      console.log("Importing media:", mediaToImport)
       const newMedia = mediaToImport.filter(
         (importedItem) => !media.some((existingItem) => existingItem.id === importedItem.id),
       )
       const updatedMedia = [...media, ...newMedia]
       setMedia(updatedMedia)
+
       if (isSupabaseReady && session) {
         const { error } = await supabase!.from("media").insert(newMedia)
         if (error) throw error
-      } else {
-        storeMedia(updatedMedia)
       }
+
+      // Always store in localStorage (cookies)
+      storeMedia(updatedMedia)
+
       toast({
         title: "Import Successful",
         description: `Added ${newMedia.length} new items to your library.`,
       })
     } catch (error) {
       console.error("Error importing media:", error)
+      console.log("Error details:", JSON.stringify(error, null, 2))
       toast({
         title: "Import Failed",
         description: "There was an error importing the media. Please try again.",
@@ -453,9 +448,13 @@ export default function Home() {
                     <ArrowUpDown className="mr-2 h-4 w-4" />
                     <span>{isReorganizing ? "Save Order" : "Re-Organize"}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setShowImportExportDialog(true)}>
+                  <DropdownMenuItem onSelect={() => setShowImportDialog(true)}>
                     <FileJson className="mr-2 h-4 w-4" />
-                    <span>Import & Export</span>
+                    <span>Import</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={exportMedia}>
+                    <Download className="mr-2 h-4 w-4" />
+                    <span>Export</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -494,11 +493,11 @@ export default function Home() {
               onDelete={handleDeleteMedia}
               onUpdate={handleUpdateMedia}
             />
-            
-            <MediaImportExportDialog
+            <ImportDialog
               isOpen={showImportDialog}
-              onClose={() => setShowImportExportDialog(false)}
-              onImport={handleImportMedia} media={[]}            />
+              onClose={() => setShowImportDialog(false)}
+              onImport={handleImportMedia}
+            />
           </div>
         </div>
       </ThemeProvider>
