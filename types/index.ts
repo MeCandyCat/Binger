@@ -15,6 +15,7 @@ export type Media = {
   release_date?: string
   first_air_date?: string
   number_of_seasons?: number
+  category: "Watched" | "Wishlist" | "Streaming"
   order?: number
 }
 
@@ -41,4 +42,3 @@ export type TMDBDetails = {
   vote_average: number
   overview: string
 }
-

@@ -14,9 +14,17 @@ import { searchTMDB } from "@/lib/tmdb"
 import type { TMDBSearchResult } from "@/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface AddMediaDialogProps {
-  onAdd: (tmdbId: number, type: "movie" | "tv", rating: number, note?: string, customDuration?: number) => Promise<void>
+  onAdd: (
+    tmdbId: number,
+    type: "movie" | "tv",
+    rating: number,
+    category: "Watched" | "Wishlist" | "Streaming",
+    note?: string,
+    customDuration?: number,
+  ) => Promise<void>
 }
 
 export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
@@ -29,6 +37,7 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
   const [note, setNote] = useState("")
   const [duration, setDuration] = useState("")
   const isDesktop = useMediaQuery("(min-width: 768px)")
+  const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">("Watched")
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -43,7 +52,14 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
   async function handleAdd() {
     if (!selected) return
 
-    await onAdd(selected.id, selected.media_type, rating[0], note, duration ? Number.parseInt(duration) : undefined)
+    await onAdd(
+      selected.id,
+      selected.media_type,
+      rating[0],
+      category,
+      note,
+      duration ? Number.parseInt(duration) : undefined,
+    )
 
     resetForm()
   }
@@ -126,6 +142,23 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
             </div>
 
             <div className="space-y-2">
+              <Label>Category</Label>
+              <Select
+                value={category}
+                onValueChange={(value: "Watched" | "Wishlist" | "Streaming") => setCategory(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Watched">Watched</SelectItem>
+                  <SelectItem value="Wishlist">Wishlist</SelectItem>
+                  <SelectItem value="Streaming">Streaming</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add your thoughts..." />
             </div>
@@ -133,8 +166,8 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
               <Button onClick={handleAdd} className="w-full">
                 Add to Library
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full hover:bg-red-500/20 transition-colors"
                 onClick={() => setSelected(null)}
               >

@@ -37,6 +37,7 @@ import { PlusCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 import { ImportDialog } from "@/components/import-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function EmptyMediaState({}) {
   return (
@@ -66,6 +67,7 @@ export default function Home() {
     dateAdded: "",
   })
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const router = useRouter()
 
   useEffect(() => {
@@ -142,6 +144,7 @@ export default function Home() {
     tmdbId: number,
     type: "movie" | "tv",
     rating: number,
+    category: "Watched" | "Wishlist" | "Streaming",
     note?: string,
     customDuration?: number,
   ) {
@@ -164,6 +167,7 @@ export default function Home() {
         customDuration,
         note,
         overview: details.overview,
+        category,
         ...(type === "tv" ? { seasons: details.number_of_seasons } : {}),
       }
 
@@ -214,7 +218,13 @@ export default function Home() {
     }
   }
 
-  async function handleUpdateMedia(id: string, note: string, duration: number, rating: number) {
+  async function handleUpdateMedia(
+    id: string,
+    note: string,
+    duration: number,
+    rating: number,
+    category: "Watched" | "Wishlist" | "Streaming",
+  ) {
     try {
       const updatedMedia = media.map((item) => {
         if (item.id === id) {
@@ -223,6 +233,7 @@ export default function Home() {
             note,
             customDuration: duration || item.runtime,
             rating,
+            category,
           }
         }
         return item
@@ -231,7 +242,7 @@ export default function Home() {
       if (isSupabaseReady && session) {
         const { error } = await supabase!
           .from("media")
-          .update({ note, customDuration: duration || undefined, rating })
+          .update({ note, customDuration: duration || undefined, rating, category })
           .eq("id", id)
         if (error) throw error
       }
@@ -404,87 +415,121 @@ export default function Home() {
 
             <Stats totalMinutes={stats.totalMinutes} totalShows={stats.totalShows} totalMovies={stats.totalMovies} />
 
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center py-4">
               <h2 className="text-2xl font-bold">Collection</h2>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Filter className="mr-2 h-4 w-4" />
-                      <span>Filter</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <ScrollArea className="h-[300px]">
-                        {filterOptions.map((filterGroup) => (
-                          <div key={filterGroup.key}>
-                            <DropdownMenuLabel>{filterGroup.name}</DropdownMenuLabel>
-                            <DropdownMenuRadioGroup
-                              value={activeFilters[filterGroup.key]}
-                              onValueChange={(value) => {
-                                const newFilters = { ...activeFilters, [filterGroup.key]: value }
-                                applyFilters(newFilters)
-                              }}
-                            >
-                              <DropdownMenuRadioItem value="">All {filterGroup.name}</DropdownMenuRadioItem>
-                              {filterGroup.options.map((option) => (
-                                <DropdownMenuRadioItem key={option} value={option}>
-                                  {option}
-                                </DropdownMenuRadioItem>
-                              ))}
-                            </DropdownMenuRadioGroup>
-                            <DropdownMenuSeparator />
-                          </div>
-                        ))}
-                      </ScrollArea>
-                      <DropdownMenuItem onSelect={clearFilters}>Clear Filters</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem onSelect={() => setIsReorganizing(!isReorganizing)}>
-                    <ArrowUpDown className="mr-2 h-4 w-4" />
-                    <span>{isReorganizing ? "Save Order" : "Re-Organize"}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setShowImportDialog(true)}>
-                    <FileJson className="mr-2 h-4 w-4" />
-                    <span>Import</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={exportMedia}>
-                    <Download className="mr-2 h-4 w-4" />
-                    <span>Export</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-4">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="Watched">Watched</SelectItem>
+                    <SelectItem value="Wishlist">Wishlist</SelectItem>
+                    <SelectItem value="Streaming">Streaming</SelectItem>
+                  </SelectContent>
+                </Select>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Filter className="mr-2 h-4 w-4" />
+                        <span>Filter</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <ScrollArea className="h-[300px]">
+                          {filterOptions.map((filterGroup) => (
+                            <div key={filterGroup.key}>
+                              <DropdownMenuLabel>{filterGroup.name}</DropdownMenuLabel>
+                              <DropdownMenuRadioGroup
+                                value={activeFilters[filterGroup.key]}
+                                onValueChange={(value) => {
+                                  const newFilters = { ...activeFilters, [filterGroup.key]: value }
+                                  applyFilters(newFilters)
+                                }}
+                              >
+                                <DropdownMenuRadioItem value="">All {filterGroup.name}</DropdownMenuRadioItem>
+                                {filterGroup.options.map((option) => (
+                                  <DropdownMenuRadioItem key={option} value={option}>
+                                    {option}
+                                  </DropdownMenuRadioItem>
+                                ))}
+                              </DropdownMenuRadioGroup>
+                              <DropdownMenuSeparator />
+                            </div>
+                          ))}
+                        </ScrollArea>
+                        <DropdownMenuItem onSelect={clearFilters}>Clear Filters</DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuItem onSelect={() => setIsReorganizing(!isReorganizing)}>
+                      <ArrowUpDown className="mr-2 h-4 w-4" />
+                      <span>{isReorganizing ? "Save Order" : "Re-Organize"}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setShowImportDialog(true)}>
+                      <FileJson className="mr-2 h-4 w-4" />
+                      <span>Import</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={exportMedia}>
+                      <Download className="mr-2 h-4 w-4" />
+                      <span>Export</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {isLoading ? (
               <p>Loading your media library...</p>
             ) : (
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="media-list">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
-                    >
-                      {(filteredMedia.length > 0 ? filteredMedia : media).map((item, index) => (
-                        <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={!isReorganizing}>
-                          {(provided) => (
-                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                              <MediaCard media={item} onClick={() => setSelectedMedia(item)} />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+              <>
+                {media.length === 0 ? (
+                  <EmptyMediaState />
+                ) : (
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="media-list">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                        >
+                          {(filteredMedia.length > 0 ? filteredMedia : media)
+                            .filter((item) => selectedCategory === "All" || item.category === selectedCategory)
+                            .map((item, index) => (
+                              <Draggable
+                                key={item.id}
+                                draggableId={item.id}
+                                index={index}
+                                isDragDisabled={!isReorganizing}
+                              >
+                                {(provided) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                  >
+                                    <MediaCard media={item} onClick={() => setSelectedMedia(item)} />
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                )}
+                {media.length > 0 &&
+                  (filteredMedia.length > 0 ? filteredMedia : media).filter(
+                    (item) => selectedCategory === "All" || item.category === selectedCategory,
+                  ).length === 0 && <p className="text-center mt-8">No media added in this category.</p>}
+              </>
             )}
 
             <MediaSheet
