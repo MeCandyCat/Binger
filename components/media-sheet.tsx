@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Pencil, Star, Trash } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -30,8 +30,17 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
   const [note, setNote] = useState(media?.note || "")
   const [duration, setDuration] = useState(media?.customDuration?.toString() || "")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [rating, setRating] = useState(media?.rating || 0)
+  const [rating, setRating] = useState(media?.rating || media?.rating === 0 ? media.rating : 0)
   const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">(media?.category || "Watched")
+
+  useEffect(() => {
+    if (media) {
+      setNote(media.note || "")
+      setDuration(media.customDuration?.toString() || "")
+      setRating(media.rating || media.rating === 0 ? media.rating : 0)
+      setCategory(media.category || "Watched")
+    }
+  }, [media])
 
   if (!media) return null
 
