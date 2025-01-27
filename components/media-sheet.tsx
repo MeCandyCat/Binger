@@ -27,17 +27,21 @@ interface MediaSheetProps {
 
 export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetProps) {
   const [isEditing, setIsEditing] = useState(false)
-  const [note, setNote] = useState(media?.note || "")
-  const [duration, setDuration] = useState(media?.customDuration?.toString() || "")
+  const [note, setNote] = useState("")
+  const [duration, setDuration] = useState("")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [rating, setRating] = useState(media?.rating || media?.rating === 0 ? media.rating : 0)
-  const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">(media?.category || "Watched")
+  const [rating, setRating] = useState(0)
+  const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">("Watched")
+
 
   useEffect(() => {
     if (media) {
       setNote(media.note || "")
-      setDuration(media.customDuration?.toString() || "")
+      
+      setDuration(media.customDuration ? media.customDuration.toString() : "")
+      
       setRating(media.rating || media.rating === 0 ? media.rating : 0)
+      
       setCategory(media.category || "Watched")
     }
   }, [media])
@@ -45,7 +49,13 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
   if (!media) return null
 
   function handleUpdate() {
-    onUpdate(media.id, note, duration ? Number(duration) : 0, rating, category)
+    onUpdate(
+      media.id,
+      note,
+      duration ? Number(duration) : media.runtime,
+      rating,
+      category
+    )
     setIsEditing(false)
   }
 
