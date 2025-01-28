@@ -1,13 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Film, Tv } from "lucide-react"
+import type { Media } from "@/types"
 
 interface StatsProps {
-  totalMinutes: number
-  totalShows: number
-  totalMovies: number
+  media: Media[]
 }
 
-export function Stats({ totalMinutes, totalShows, totalMovies }: StatsProps) {
+export function Stats({ media }: StatsProps) {
+  const watchedMedia = media.filter((item) => item.category === "Watched")
+  const totalMinutes = watchedMedia.reduce((acc, item) => acc + (item.customDuration || item.runtime), 0)
+  const totalShows = watchedMedia.filter((item) => item.type === "tv").length
+  const totalMovies = watchedMedia.filter((item) => item.type === "movie").length
+
   const hours = Math.floor(totalMinutes / 60)
   const days = Math.floor(hours / 24)
 
@@ -32,7 +36,7 @@ export function Stats({ totalMinutes, totalShows, totalMovies }: StatsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalShows}</div>
-          <p className="text-xs text-muted-foreground">Completed shows</p>
+          <p className="text-xs text-muted-foreground">Watched shows</p>
         </CardContent>
       </Card>
       <Card>

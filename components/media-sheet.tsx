@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Pencil, Star, Trash } from 'lucide-react'
+import { Pencil, Star, Trash } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -22,7 +22,14 @@ interface MediaSheetProps {
   media: Media | null
   onClose: () => void
   onDelete: (id: string) => void
-  onUpdate: (id: string, note: string, duration: number, rating: number, category: "Watched" | "Wishlist" | "Streaming") => void
+  onUpdate: (
+    id: string,
+    note: string,
+    duration: number,
+    rating: number,
+    category: "Watched" | "Wishlist" | "Streaming",
+    watchedSeasons?: number,
+  ) => void
 }
 
 export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetProps) {
@@ -32,17 +39,15 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [rating, setRating] = useState(0)
   const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">("Watched")
-
+  const [watchedSeasons, setWatchedSeasons] = useState(0)
 
   useEffect(() => {
     if (media) {
       setNote(media.note || "")
-      
       setDuration(media.customDuration ? media.customDuration.toString() : "")
-      
       setRating(media.rating || media.rating === 0 ? media.rating : 0)
-      
       setCategory(media.category || "Watched")
+      setWatchedSeasons(media.watchedSeasons || 0)
     }
   }, [media])
 
@@ -54,7 +59,8 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
       note,
       duration ? Number(duration) : media.runtime,
       rating,
-      category
+      category,
+      category === "Streaming" && media.type === "tv" ? watchedSeasons : undefined,
     )
     setIsEditing(false)
   }
@@ -103,13 +109,13 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                 <Badge variant="secondary">
                   {media.type === "movie"
                     ? `${media.runtime} min`
-                    : `${media.number_of_seasons} season${media.number_of_seasons > 1 ? "s" : ""}`}
+                    : `${media.seasons || 0} season${media.seasons !== 1 ? "s" : ""}`}
                 </Badge>
               </div>
 
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                  {media.rating && !isNaN(media.rating) && (
+                  {media.category === "Watched" && media.rating && !isNaN(media.rating) && (
                     <div className="flex items-center">
                       <Star className="w-4 h-4 text-yellow-400 mr-1 fill-current" />
                       <span className="font-semibold">{(media.rating || 0).toFixed(1)}/10</span>
@@ -125,6 +131,15 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                   )}
                 </div>
               </div>
+
+              {media.category === "Streaming" && media.type === "tv" && (
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Watched Seasons:</span>
+                  <span>
+                    {media.watchedSeasons || 0} / {media.seasons || 0}
+                  </span>
+                </div>
+              )}
 
               <div>
                 <h3 className="font-semibold mb-2">Overview</h3>
@@ -158,7 +173,10 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                   </div>
                   <div>
                     <label className="text-sm font-medium">Category</label>
-                    <Select value={category} onValueChange={(value: "Watched" | "Wishlist" | "Streaming") => setCategory(value)}>
+                    <Select
+                      value={category}
+                      onValueChange={(value: "Watched" | "Wishlist" | "Streaming") => setCategory(value)}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
@@ -169,6 +187,26 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                       </SelectContent>
                     </Select>
                   </div>
+                  {category === "Streaming" && media.type === "tv" && (
+                    <div>
+                      <label className="text-sm font-medium">Watched Seasons</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max={media.seasons || 0}
+                        value={watchedSeasons}
+                        onChange={(e) => {
+                          const value = Number.parseInt(e.target.value)
+                          if (!isNaN(value) && value >= 0 && value <= (media.seasons || 0)) {
+                            setWatchedSeasons(value)
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {watchedSeasons} / {media.seasons || 0} seasons watched
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Button onClick={handleUpdate}>Save</Button>
                     <Button variant="outline" onClick={() => setIsEditing(false)}>

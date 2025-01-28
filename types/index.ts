@@ -17,6 +17,7 @@ export type Media = {
   number_of_seasons?: number
   category: "Watched" | "Wishlist" | "Streaming"
   order?: number
+  watchedSeasons?: number
 }
 
 export type TMDBSearchResult = {

@@ -134,11 +134,12 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [session]) // Added session to the dependency array
 
-  const stats = {
-    totalMinutes: media.reduce((acc, item) => acc + (item.customDuration || item.runtime), 0),
-    totalShows: media.filter((item) => item.type === "tv").length,
-    totalMovies: media.filter((item) => item.type === "movie").length,
-  }
+  // Removed stats calculation
+  // const stats = {
+  //   totalMinutes: media.reduce((acc, item) => acc + (item.customDuration || item.runtime), 0),
+  //   totalShows: media.filter((item) => item.type === "tv").length,
+  //   totalMovies: media.filter((item) => item.type === "movie").length,
+  // }
 
   async function handleAddMedia(
     tmdbId: number,
@@ -168,7 +169,10 @@ export default function Home() {
         note,
         overview: details.overview,
         category,
-        ...(type === "tv" ? { seasons: details.number_of_seasons } : {}),
+        watchedSeasons: category === "Streaming" && type === "tv" ? 0 : undefined,
+        seasons: type === "tv" ? details.number_of_seasons : undefined,
+        release_date: details.release_date,
+        first_air_date: details.first_air_date,
       }
 
       if (isSupabaseReady && session) {
@@ -224,6 +228,7 @@ export default function Home() {
     duration: number,
     rating: number,
     category: "Watched" | "Wishlist" | "Streaming",
+    watchedSeasons?: number,
   ) {
     try {
       const updatedMedia = media.map((item) => {
@@ -234,6 +239,7 @@ export default function Home() {
             customDuration: duration || item.runtime,
             rating,
             category,
+            watchedSeasons: category === "Streaming" && item.type === "tv" ? watchedSeasons : undefined,
           }
         }
         return item
@@ -242,7 +248,13 @@ export default function Home() {
       if (isSupabaseReady && session) {
         const { error } = await supabase!
           .from("media")
-          .update({ note, customDuration: duration || undefined, rating, category })
+          .update({
+            note,
+            customDuration: duration || undefined,
+            rating,
+            category,
+            watchedSeasons: category === "Streaming" ? watchedSeasons : undefined,
+          })
           .eq("id", id)
         if (error) throw error
       }
@@ -413,7 +425,7 @@ export default function Home() {
               </Alert>
             )}
 
-            <Stats totalMinutes={stats.totalMinutes} totalShows={stats.totalShows} totalMovies={stats.totalMovies} />
+            <Stats media={media} />
 
             <div className="flex justify-between items-center py-4">
               <h2 className="text-2xl font-bold">Collection</h2>
@@ -549,4 +561,3 @@ export default function Home() {
     </ErrorBoundary>
   )
 }
-
