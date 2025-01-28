@@ -55,13 +55,13 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
 
   function handleUpdate() {
     onUpdate(
-      media.id,
+      media?.id,
       note,
-      duration ? Number(duration) : media.runtime,
+      duration ? Number(duration) : media?.runtime,
       rating,
       category,
-      category === "Streaming" && media.type === "tv" ? watchedSeasons : undefined,
-    )
+      category === "Streaming" && media?.type === "tv" ? watchedSeasons : undefined,
+    );    
     setIsEditing(false)
   }
 
@@ -104,7 +104,11 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge variant="secondary">{media.type === "movie" ? "Movie" : "TV Show"}</Badge>
                 <Badge variant="secondary">
-                  {new Date(media.type === "movie" ? media.release_date : media.first_air_date).getFullYear()}
+                  {media.type === "movie" && media.release_date !== undefined
+                    ? new Date(media.release_date).getFullYear()
+                    : media.first_air_date !== undefined
+                    ? new Date(media.first_air_date).getFullYear()
+                    : "Unknown"}
                 </Badge>
                 <Badge variant="secondary">
                   {media.type === "movie"
@@ -164,7 +168,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                     <Input
                       type="number"
                       value={duration || ""}
-                      onChange={(e) => setDuration(e.target.value ? Number.parseInt(e.target.value) : undefined)}
+                      onChange={(e) => setDuration(e.target.value ? Number.parseInt(e.target.value).toString() : "")}
                     />
                   </div>
                   <div>

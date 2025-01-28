@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Stats } from "@/components/stats"
@@ -38,6 +39,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 import { ImportDialog } from "@/components/import-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 export function EmptyMediaState({}) {
   return (
@@ -68,6 +70,7 @@ export default function Home() {
   })
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
+  const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
 
   useEffect(() => {
@@ -132,14 +135,7 @@ export default function Home() {
     }) || { data: { subscription: { unsubscribe: () => {} } } }
 
     return () => subscription.unsubscribe()
-  }, [session]) // Added session to the dependency array
-
-  // Removed stats calculation
-  // const stats = {
-  //   totalMinutes: media.reduce((acc, item) => acc + (item.customDuration || item.runtime), 0),
-  //   totalShows: media.filter((item) => item.type === "tv").length,
-  //   totalMovies: media.filter((item) => item.type === "movie").length,
-  // }
+  }, [session])
 
   async function handleAddMedia(
     tmdbId: number,
@@ -282,7 +278,7 @@ export default function Home() {
     { name: "Date Added", key: "dateAdded", options: ["Latest", "Oldest"] },
   ]
 
-  function applyFilters(newFilters) {
+  function applyFilters(newFilters:any) {
     setActiveFilters(newFilters)
     const filtered = [...media]
 
@@ -317,7 +313,7 @@ export default function Home() {
     setFilteredMedia([])
   }
 
-  function onDragEnd(result) {
+  function onDragEnd(result:any) {
     if (!result.destination) return
 
     const items = Array.from(media)
@@ -378,14 +374,24 @@ export default function Home() {
     }
   }
 
+  const filteredMediaBySearch = (mediaToFilter: Media[]) => {
+    if (!searchQuery) return mediaToFilter
+    return mediaToFilter.filter((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()))
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <div className="min-h-screen bg-background">
+        <motion.div
+          className="min-h-screen bg-background"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <div className="container py-10">
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-4xl font-bold">Binger</h1>
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
+              <h1 className="text-3xl sm:text-4xl font-bold">Binger</h1>
+              <div className="flex flex-wrap items-center gap-4">
                 <ThemeToggle />
                 {isSupabaseReady && session ? (
                   <DropdownMenu>
@@ -427,11 +433,20 @@ export default function Home() {
 
             <Stats media={media} />
 
-            <div className="flex justify-between items-center py-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-4 w-full sm:w-auto">
               <h2 className="text-2xl font-bold">Collection</h2>
-              <div className="flex items-center gap-4">
+                <Input
+                  type="text"
+                  placeholder="Search media..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full sm:w-64"
+                />
+              </div>
+              <div className="flex items-center gap-4 w-full sm:w-auto">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -505,32 +520,37 @@ export default function Home() {
                 ) : (
                   <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="media-list">
-                      {(provided) => (
+                      {(provided:any) => (
                         <div
                           {...provided.droppableProps}
                           ref={provided.innerRef}
-                          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
                         >
-                          {(filteredMedia.length > 0 ? filteredMedia : media)
-                            .filter((item) => selectedCategory === "All" || item.category === selectedCategory)
-                            .map((item, index) => (
-                              <Draggable
-                                key={item.id}
-                                draggableId={item.id}
-                                index={index}
-                                isDragDisabled={!isReorganizing}
-                              >
-                                {(provided) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                  >
-                                    <MediaCard media={item} onClick={() => setSelectedMedia(item)} />
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
+                          <AnimatePresence>
+                            {(filteredMedia.length > 0
+                              ? filteredMediaBySearch(filteredMedia)
+                              : filteredMediaBySearch(media)
+                            )
+                              .filter((item) => selectedCategory === "All" || item.category === selectedCategory)
+                              .map((item, index) => (
+                                <Draggable
+                                  key={item.id}
+                                  draggableId={item.id}
+                                  index={index}
+                                  isDragDisabled={!isReorganizing}
+                                >
+                                  {(provided:any) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                    >
+                                      <MediaCard media={item} onClick={() => setSelectedMedia(item)} index={index} />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                          </AnimatePresence>
                           {provided.placeholder}
                         </div>
                       )}
@@ -556,7 +576,7 @@ export default function Home() {
               onImport={handleImportMedia}
             />
           </div>
-        </div>
+        </motion.div>
       </ThemeProvider>
     </ErrorBoundary>
   )

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Search, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
@@ -90,28 +91,42 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
       <ScrollArea className="h-[400px] pr-4">
         {!selected ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {results.map((result) => (
-              <Card
-                key={result.id}
-                className="cursor-pointer transition-transform hover:scale-105"
-                onClick={() => setSelected(result)}
-              >
-                <div className="aspect-[2/3] relative">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
-                    alt={result.title || result.name}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold truncate">{result.title || result.name}</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{result.media_type}</p>
-                </CardContent>
-              </Card>
-            ))}
+            <AnimatePresence>
+              {results.map((result, index) => (
+                <motion.div
+                  key={result.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card
+                    className="cursor-pointer transition-transform hover:scale-105"
+                    onClick={() => setSelected(result)}
+                  >
+                    <div className="aspect-[2/3] relative">
+                      <img
+                        src={`https://image.tmdb.org/t/p/w500${result.poster_path}`}
+                        alt={result.title || result.name}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold truncate">{result.title || result.name}</h3>
+                      <p className="text-sm text-muted-foreground capitalize">{result.media_type}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         ) : (
-          <div className="space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4"
+          >
             <div className="flex gap-4">
               <img
                 src={`https://image.tmdb.org/t/p/w500${selected.poster_path}`}
@@ -174,7 +189,7 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
                 Discard
               </Button>
             </div>
-          </div>
+          </motion.div>
         )}
       </ScrollArea>
     </div>
@@ -216,4 +231,3 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
     </Drawer>
   )
 }
-

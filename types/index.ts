@@ -33,6 +33,8 @@ export type TMDBSearchResult = {
 }
 
 export type TMDBDetails = {
+  first_air_date: string | undefined
+  release_date: string | undefined
   id: number
   title?: string
   name?: string
