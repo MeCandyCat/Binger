@@ -1,30 +1,15 @@
-import { TMDBSearchResult, TMDBDetails } from '../types'
+import type { TMDBSearchResult, TMDBDetails } from "../types"
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY
-const TMDB_BASE_URL = "https://api.themoviedb.org/3"
-
-async function fetchTMDB(endpoint: string, params: Record<string, string> = {}): Promise<any> {
-  if (!TMDB_API_KEY) {
-    throw new Error("TMDB API key is not configured")
-  }
-
-  const url = new URL(`${TMDB_BASE_URL}${endpoint}`)
-  url.searchParams.append("api_key", TMDB_API_KEY)
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.append(key, value)
-  })
-
-  const response = await fetch(url.toString())
-  if (!response.ok) {
-    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`)
-  }
-  return response.json()
-}
+const API_BASE_URL = "/api/tmdb"
 
 export async function searchTMDB(query: string): Promise<TMDBSearchResult[]> {
   try {
-    const data = await fetchTMDB("/search/multi", { query, include_adult: "false" })
-    return data.results as TMDBSearchResult[]
+    const response = await fetch(`${API_BASE_URL}?action=search&query=${encodeURIComponent(query)}`)
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data as TMDBSearchResult[]
   } catch (error) {
     console.error("Error searching TMDB:", error)
     throw error
@@ -33,7 +18,11 @@ export async function searchTMDB(query: string): Promise<TMDBSearchResult[]> {
 
 export async function getTMDBDetails(id: number, type: "movie" | "tv"): Promise<TMDBDetails> {
   try {
-    const data = await fetchTMDB(`/${type}/${id}`)
+    const response = await fetch(`${API_BASE_URL}?action=details&id=${id}&type=${type}`)
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
     return data as TMDBDetails
   } catch (error) {
     console.error("Error getting TMDB details:", error)

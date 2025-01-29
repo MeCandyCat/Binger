@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
-import { Pencil, Star, Trash } from "lucide-react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Pencil, Star, Trash, RefreshCw } from "lucide-react"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import type { Media } from "@/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getTMDBDetails } from "@/lib/tmdb"
+import { storeMedia, getStoredMedia } from "@/lib/storage"
+import type { Media } from "@/types"
 
 interface MediaSheetProps {
   media: Media | null
@@ -40,12 +42,13 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
   const [rating, setRating] = useState(0)
   const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">("Watched")
   const [watchedSeasons, setWatchedSeasons] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     if (media) {
       setNote(media.note || "")
       setDuration(media.customDuration ? media.customDuration.toString() : "")
-      setRating(media.rating || media.rating === 0 ? media.rating : 0)
+      setRating(media.rating || 0)
       setCategory(media.category || "Watched")
       setWatchedSeasons(media.watchedSeasons || 0)
     }
@@ -53,193 +56,273 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
 
   if (!media) return null
 
-  function handleUpdate() {
+  const handleUpdate = () => {
     onUpdate(
-      media?.id,
+      media.id,
       note,
-      duration ? Number(duration) : media?.runtime,
+      duration ? Number(duration) : media.runtime,
       rating,
       category,
-      category === "Streaming" && media?.type === "tv" ? watchedSeasons : undefined,
-    );    
+      category === "Streaming" && media.type === "tv" ? watchedSeasons : undefined,
+    )
     setIsEditing(false)
   }
 
-  function handleDelete() {
+  const handleDelete = () => {
     onDelete(media.id)
     setShowDeleteDialog(false)
     onClose()
   }
 
+  const handleRefresh = async () => {
+    if (!media) return
+    setIsRefreshing(true)
+    try {
+      const updatedDetails = await getTMDBDetails(media.tmdbId, media.type)
+      const updatedMedia: Media = {
+        ...media,
+        title: updatedDetails.title || updatedDetails.name || media.title,
+        posterPath: updatedDetails.poster_path || media.posterPath,
+        tmdbRating: updatedDetails.vote_average,
+        runtime: media.type === "movie" ? updatedDetails.runtime || media.runtime : media.runtime,
+        overview: updatedDetails.overview || media.overview,
+        seasons: media.type === "tv" ? updatedDetails.number_of_seasons || media.seasons : media.seasons,
+        release_date: media.type === "movie" ? updatedDetails.release_date || media.release_date : media.release_date,
+        first_air_date: media.type === "tv" ? updatedDetails.first_air_date || media.first_air_date : media.first_air_date,
+      }
+      onUpdate(
+        updatedMedia.id,
+        updatedMedia.note || "",
+        updatedMedia.customDuration || updatedMedia.runtime,
+        updatedMedia.rating,
+        updatedMedia.category,
+        updatedMedia.watchedSeasons,
+      )
+      const storedMedia = getStoredMedia()
+      const updatedStoredMedia = storedMedia.map((item) => (item.id === updatedMedia.id ? updatedMedia : item))
+      storeMedia(updatedStoredMedia)
+    } catch (error) {
+      console.error("Error refreshing media data:", error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+
+  const RatingDisplay = () => {
+    return (
+      <div className="flex gap-4">
+        {/* Show user rating for Watched and Streaming items */}
+        {media?.category !== "Wishlist" && (
+          <div className="flex items-center">
+            <Star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
+            <span className="font-medium">{rating.toFixed(1)}</span>
+            <span className="text-sm text-muted-foreground ml-1">Your rating</span>
+          </div>
+        )}
+        {/* Always show TMDB rating if available */}
+        {media?.tmdbRating > 0 && (
+          <div className="flex items-center">
+            <Star className="w-4 h-4 text-blue-500 fill-current mr-1" />
+            <span className="font-medium">{media.tmdbRating.toFixed(1)}</span>
+            <span className="text-sm text-muted-foreground ml-1">TMDB</span>
+          </div>
+        )}
+        {/* Show "Not rated" for non-wishlist items without rating */}
+        {media?.category !== "Wishlist" && rating === 0 && (
+          <div className="flex items-center text-muted-foreground text-sm">
+            Not rated yet
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <Sheet open={!!media} onOpenChange={() => onClose()}>
-      <SheetContent className="sm:max-w-[500px] p-0">
+    <Sheet open={!!media} onOpenChange={onClose}>
+      <SheetContent className="p-0 sm:max-w-xl w-full">
         <div className="relative h-full flex flex-col">
-          {/* Background Image */}
+          {/* Blur Background */}
           <div className="absolute inset-0 z-0">
-            <img
-              src={`https://image.tmdb.org/t/p/w500${media.posterPath}`}
-              alt={media.title}
-              className="w-full h-full object-cover blur-3xl opacity-20 pointer-events-none"
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundImage: `url(https://image.tmdb.org/t/p/w500${media?.posterPath})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(20px)',
+                opacity: '0.15',
+              }}
             />
           </div>
 
-          {/* Scrollable Content */}
-          <div className="relative z-10 flex-1 overflow-y-auto">
-            <SheetHeader className="p-4 pb-0">
-              <SheetTitle className="flex items-center justify-between">
-                <span>{media.title}</span>
-              </SheetTitle>
-            </SheetHeader>
-
-            <div className="p-4 space-y-4">
-              <div className="w-full aspect-video relative">
-                <img
-                  src={`https://image.tmdb.org/t/p/w500${media.posterPath}`}
-                  alt={media.title}
-                  className="w-full h-full object-cover rounded-lg"
-                />
+          {/* Main Content Container */}
+          <div className="relative z-10 flex flex-col h-full">
+            {/* Header with updated refresh button */}
+            <div className="flex items-center justify-between p-4 border-b bg-black/20 backdrop-blur-sm">
+              <h2 className="text-xl font-semibold">{media?.title}</h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="mr-8"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                </Button>
               </div>
+            </div>
 
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Badge variant="secondary">{media.type === "movie" ? "Movie" : "TV Show"}</Badge>
-                <Badge variant="secondary">
-                  {media.type === "movie" && media.release_date !== undefined
-                    ? new Date(media.release_date).getFullYear()
-                    : media.first_air_date !== undefined
-                    ? new Date(media.first_air_date).getFullYear()
-                    : "Unknown"}
-                </Badge>
-                <Badge variant="secondary">
-                  {media.type === "movie"
-                    ? `${media.runtime} min`
-                    : `${media.seasons || 0} season${media.seasons !== 1 ? "s" : ""}`}
-                </Badge>
-              </div>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="space-y-6 p-4">
+                {/* Media Preview Section */}
+                <div className="w-full aspect-[16/9] relative overflow-hidden rounded-lg shadow-lg">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w500${media?.posterPath}`}
+                    alt={media?.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
 
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  {media.category === "Watched" && media.rating && !isNaN(media.rating) && (
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400 mr-1 fill-current" />
-                      <span className="font-semibold">{(media.rating || 0).toFixed(1)}/10</span>
-                      <span className="text-sm text-muted-foreground ml-1">(Your rating)</span>
-                    </div>
-                  )}
-                  {media.tmdbRating && !isNaN(media.tmdbRating) && (
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-blue-400 mr-1 fill-current" />
-                      <span className="font-semibold">{(media.tmdbRating || 0).toFixed(1)}/10</span>
-                      <span className="text-sm text-muted-foreground ml-1">(TMDB)</span>
+                {/* Info Section */}
+                <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge>{media?.type === "movie" ? "Movie" : "TV Show"}</Badge>
+                    <Badge variant="outline">
+                      {media?.type === "movie"
+                        ? media?.release_date
+                          ? new Date(media.release_date).getFullYear()
+                          : "Unknown"
+                        : media?.first_air_date
+                        ? new Date(media.first_air_date).getFullYear()
+                        : "Unknown"}
+                    </Badge>
+                    <Badge variant="outline">
+                      {media?.type === "movie"
+                        ? `${media.runtime || "?"} min`
+                        : `${media.seasons || "?"} season${media?.seasons !== 1 ? "s" : ""}`}
+                    </Badge>
+                  </div>
+
+                  <RatingDisplay />
+
+                  {media?.category === "Streaming" && media.type === "tv" && (
+                    <div className="bg-black/20 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Progress</span>
+                        <span className="text-sm">
+                          {media.watchedSeasons || 0} / {media.seasons || 0} seasons
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
 
-              {media.category === "Streaming" && media.type === "tv" && (
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Watched Seasons:</span>
-                  <span>
-                    {media.watchedSeasons || 0} / {media.seasons || 0}
-                  </span>
+                {/* Overview Section */}
+                <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-2">
+                  <h3 className="font-medium">Overview</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{media?.overview}</p>
                 </div>
-              )}
 
-              <div>
-                <h3 className="font-semibold mb-2">Overview</h3>
-                <p className="text-sm text-muted-foreground">{media.overview}</p>
-              </div>
-
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Your Rating</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      value={rating}
-                      onChange={(e) => setRating(Number.parseFloat(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Custom Duration (minutes)</label>
-                    <Input
-                      type="number"
-                      value={duration || ""}
-                      onChange={(e) => setDuration(e.target.value ? Number.parseInt(e.target.value).toString() : "")}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Notes</label>
-                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Category</label>
-                    <Select
-                      value={category}
-                      onValueChange={(value: "Watched" | "Wishlist" | "Streaming") => setCategory(value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Watched">Watched</SelectItem>
-                        <SelectItem value="Wishlist">Wishlist</SelectItem>
-                        <SelectItem value="Streaming">Streaming</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {category === "Streaming" && media.type === "tv" && (
-                    <div>
-                      <label className="text-sm font-medium">Watched Seasons</label>
+                {/* Content (Edit form or display) */}
+                {isEditing ? (
+                  <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="space-y-4 bg-black/20 backdrop-blur-sm p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Rating</label>
                       <Input
                         type="number"
                         min="0"
-                        max={media.seasons || 0}
-                        value={watchedSeasons}
-                        onChange={(e) => {
-                          const value = Number.parseInt(e.target.value)
-                          if (!isNaN(value) && value >= 0 && value <= (media.seasons || 0)) {
-                            setWatchedSeasons(value)
-                          }
-                        }}
+                        max="10"
+                        step="0.1"
+                        value={rating}
+                        onChange={(e) => setRating(Number(e.target.value))}
+                        className="bg-black/20"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {watchedSeasons} / {media.seasons || 0} seasons watched
-                      </p>
                     </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button onClick={handleUpdate}>Save</Button>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <h3 className="font-semibold mb-2">Notes</h3>
-                  <p className="text-sm text-muted-foreground">{media.note || "No notes added yet."}</p>
-                  <h3 className="font-semibold mb-2 mt-4">Category</h3>
-                  <p className="text-sm text-muted-foreground">{media.category}</p>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Fixed Bottom Actions */}
-          <div className="sticky bottom-0 bg-background/80 backdrop-blur-sm p-4 border-t z-20">
-            <div className="flex gap-2">
-              <Button className="flex-1" variant="outline" onClick={() => setIsEditing(!isEditing)}>
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-              <Button className="flex-1" variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-                <Trash className="w-4 h-4 mr-2" />
-                Delete
-              </Button>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Duration (minutes)</label>
+                      <Input
+                        type="number"
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                        className="bg-black/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Notes</label>
+                      <Textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="min-h-[100px] bg-black/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Category</label>
+                      <Select value={category} onValueChange={(value: "Watched" | "Wishlist" | "Streaming") => setCategory(value)}>
+                        <SelectTrigger className="bg-black/20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Watched">Watched</SelectItem>
+                          <SelectItem value="Wishlist">Wishlist</SelectItem>
+                          <SelectItem value="Streaming">Streaming</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {category === "Streaming" && media?.type === "tv" && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Watched Seasons</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max={media.seasons || 0}
+                          value={watchedSeasons}
+                          onChange={(e) => setWatchedSeasons(Math.min(Number(e.target.value), media.seasons || 0))}
+                          className="bg-black/20"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <Button type="submit">Save Changes</Button>
+                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-4 bg-black/20 backdrop-blur-sm p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <h3 className="font-medium">Notes</h3>
+                      <p className="text-sm text-muted-foreground">{note || "No notes added."}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-medium">Category</h3>
+                      <p className="text-sm text-muted-foreground">{category}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 border-t bg-black/20 backdrop-blur-sm">
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -248,17 +331,14 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {media.title}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {media.title} from your library.
+              This will permanently remove this item from your library. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive hover:bg-red-500/80 transition-colors text-destructive-foreground"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

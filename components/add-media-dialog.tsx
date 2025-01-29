@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Plus, X } from "lucide-react"
+import { Search, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -45,9 +45,14 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
     if (!query) return
 
     setLoading(true)
-    const results = await searchTMDB(query)
-    setResults(results.filter((r) => r.media_type === "movie" || r.media_type === "tv"))
-    setLoading(false)
+    try {
+      const results = await searchTMDB(query)
+      setResults(results.filter((r) => r.media_type === "movie" || r.media_type === "tv"))
+    } catch (error) {
+      console.error("Error searching for media:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleAdd() {

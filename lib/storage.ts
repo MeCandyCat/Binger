@@ -31,4 +31,3 @@ export function storeMedia(media: Media[]) {
     console.error("Error storing media in localStorage:", error)
   }
 }
-
