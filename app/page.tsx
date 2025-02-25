@@ -1,67 +1,32 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Stats } from "@/components/stats"
-import { MediaCard } from "@/components/media-card"
-import { AddMediaDialog } from "@/components/add-media-dialog"
-import { MediaSheet } from "@/components/media-sheet"
-import { getTMDBDetails, searchTMDB } from "@/lib/tmdb"
+import { MediaGrid } from "@/components/media-grid"
+import { getTMDBDetails } from "@/lib/tmdb"
 import { getStoredMedia, storeMedia } from "@/lib/storage"
 import type { Media } from "@/types"
 import ErrorBoundary from "@/components/error-boundary"
 import { toast } from "@/components/ui/use-toast"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, User, MoreHorizontal, Filter, ArrowUpDown, FileJson, Download } from "lucide-react"
-import { supabase, isSupabaseConfigured, getSupabaseErrorMessage } from "@/lib/supabase"
-import type { Session } from "@supabase/supabase-js"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-} from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { PlusCircleIcon } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
+import { NavBar } from "@/components/nav-bar"
+import { MediaFilters } from "@/components/media-filters"
 import { ImportDialog } from "@/components/import-dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
+import { MediaReorganizer } from "@/components/media-reorganizer"
 
-export function EmptyMediaState({}) {
+export function EmptyMediaState() {
   return (
-    <Card className="w-full max-w-[150vh] mx-auto">
-      <CardHeader className="items-center text-center">
-        <PlusCircleIcon className="w-12 h-12 text-muted-foreground mb-4" />
-        <CardTitle>Get Started</CardTitle>
-        <CardDescription>Add Media to expand your collection</CardDescription>
-      </CardHeader>
-      <CardContent className="flex justify-center"></CardContent>
-    </Card>
+    <div className="text-center p-8">
+      <h2 className="text-2xl font-semibold mb-4">Your collection is empty</h2>
+      <p>Start adding media to your collection!</p>
+    </div>
   )
 }
 
 export default function Home() {
   const [media, setMedia] = useState<Media[]>([])
-  const [selectedMedia, setSelectedMedia] = useState<Media | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [configError, setConfigError] = useState<string | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [isSupabaseReady, setIsSupabaseReady] = useState(false)
-  const [isReorganizing, setIsReorganizing] = useState(false)
   const [filteredMedia, setFilteredMedia] = useState<Media[]>([])
   const [activeFilters, setActiveFilters] = useState({
     tmdbRating: "",
@@ -71,82 +36,48 @@ export default function Home() {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const [searchQuery, setSearchQuery] = useState("")
-  const router = useRouter()
+  const [isReorganizerOpen, setIsReorganizerOpen] = useState(false)
 
   useEffect(() => {
-    const initializeApp = async () => {
+    const loadMedia = async () => {
       setIsLoading(true)
-      setConfigError(null)
-
-      // Check Supabase configuration
-      const isConfigured = isSupabaseConfigured()
-      setIsSupabaseReady(isConfigured)
-
-      if (!isConfigured) {
-        const errorMessage = getSupabaseErrorMessage()
-        setConfigError(errorMessage || "Failed to initialize Supabase client.")
-        setIsLoading(false)
-        return
-      }
-
-      // Check session
-      try {
-        const { data, error } = await supabase!.auth.getSession()
-        if (error) throw error
-        setSession(data.session)
-      } catch (error) {
-        console.error("Error fetching session:", error)
-        setConfigError("Failed to fetch user session. Please try logging in again.")
-      }
-
-      // Load initial data
-      try {
-        let mediaData: Media[]
-        if (session) {
-          const { data, error } = await supabase!.from("media").select("*").order("created_at", { ascending: false })
-          if (error) throw error
-          mediaData = data
-        } else {
-          mediaData = getStoredMedia()
-        }
-        setMedia(mediaData)
-
-        // Test TMDB API configuration
-        await searchTMDB("test")
-      } catch (error) {
-        console.error("Error loading initial data:", error)
-        if (error instanceof Error && error.message.includes("TMDB API key is not configured")) {
-          setConfigError("TMDB API key is not configured. Please check your environment variables.")
-        } else {
-          setConfigError("Failed to load your media library. Please try refreshing the page.")
-        }
-      }
-
+      const storedMedia = getStoredMedia()
+      setMedia(storedMedia)
       setIsLoading(false)
     }
 
-    initializeApp()
+    loadMedia()
+  }, [])
 
-    // Set up auth state change listener
-    const {
-      data: { subscription },
-    } = supabase?.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    }) || { data: { subscription: { unsubscribe: () => {} } } }
-
-    return () => subscription.unsubscribe()
-  }, [session])
-
-  async function handleAddMedia(
+  const handleAddMedia = async (
     tmdbId: number,
     type: "movie" | "tv",
     rating: number,
     category: "Watched" | "Wishlist" | "Streaming",
     note?: string,
     customDuration?: number,
-  ) {
+    seasons?: number,
+    episodesPerSeason?: number,
+    episodeDuration?: number,
+    completedSeasons?: number,
+  ) => {
     try {
+      const existingMedia = media.find((item) => item.tmdbId === tmdbId && item.type === type)
+      if (existingMedia) {
+        toast({
+          title: "Media already exists",
+          description: `${existingMedia.title} is already in your library.`,
+          variant: "destructive",
+        })
+        return
+      }
+
       const details = await getTMDBDetails(tmdbId, type)
+
+      let duration = customDuration
+      if (type === "tv" && !customDuration && seasons && episodesPerSeason && episodeDuration) {
+        duration = seasons * episodesPerSeason * episodeDuration
+      }
 
       const newMedia: Media = {
         id: Math.random().toString(36).substring(7),
@@ -154,31 +85,26 @@ export default function Home() {
         title: details.title || details.name || "",
         type,
         posterPath: details.poster_path,
+        backdropPath: details.backdrop_path,
         rating,
         tmdbRating: details.vote_average,
         watchedAt: new Date(),
-        runtime:
-          type === "movie"
-            ? details.runtime || 0
-            : (details.episode_run_time?.[0] || 0) * (details.number_of_seasons || 0),
-        customDuration,
+        runtime: type === "movie" ? details.runtime || 0 : 0,
+        customDuration: duration,
         note,
         overview: details.overview,
         category,
-        watchedSeasons: category === "Streaming" && type === "tv" ? 0 : undefined,
-        seasons: type === "tv" ? details.number_of_seasons : undefined,
+        watchedSeasons: category === "Streaming" && type === "tv" ? completedSeasons : undefined,
+        seasons: type === "tv" ? seasons : undefined,
+        episodesPerSeason: type === "tv" ? episodesPerSeason : undefined,
+        episodeDuration: type === "tv" ? episodeDuration : undefined,
         release_date: details.release_date,
         first_air_date: details.first_air_date,
       }
 
-      if (isSupabaseReady && session) {
-        const { error } = await supabase!.from("media").insert(newMedia)
-        if (error) throw error
-      }
-
       const updatedMedia = [newMedia, ...media]
       setMedia(updatedMedia)
-      if (!isSupabaseReady || !session) storeMedia(updatedMedia)
+      storeMedia(updatedMedia)
       toast({
         title: "Success",
         description: `Added ${newMedia.title} to your library.`,
@@ -193,71 +119,11 @@ export default function Home() {
     }
   }
 
-  async function handleDeleteMedia(id: string) {
+  const handleUpdateMedia = async (id: string, updates: Partial<Media>) => {
     try {
-      if (isSupabaseReady && session) {
-        const { error } = await supabase!.from("media").delete().eq("id", id)
-        if (error) throw error
-      }
-
-      const updatedMedia = media.filter((item) => item.id !== id)
+      const updatedMedia = media.map((item) => (item.id === id ? { ...item, ...updates } : item))
       setMedia(updatedMedia)
-      if (!isSupabaseReady || !session) storeMedia(updatedMedia)
-      setSelectedMedia(null)
-      toast({
-        title: "Success",
-        description: "Media deleted from your library.",
-      })
-    } catch (error) {
-      console.error("Error deleting media:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete media. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  async function handleUpdateMedia(
-    id: string,
-    note: string,
-    duration: number,
-    rating: number,
-    category: "Watched" | "Wishlist" | "Streaming",
-    watchedSeasons?: number,
-  ) {
-    try {
-      const updatedMedia = media.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            note,
-            customDuration: duration || item.runtime,
-            rating,
-            category,
-            watchedSeasons: category === "Streaming" && item.type === "tv" ? watchedSeasons : undefined,
-          }
-        }
-        return item
-      })
-
-      if (isSupabaseReady && session) {
-        const { error } = await supabase!
-          .from("media")
-          .update({
-            note,
-            customDuration: duration || undefined,
-            rating,
-            category,
-            watchedSeasons: category === "Streaming" ? watchedSeasons : undefined,
-          })
-          .eq("id", id)
-        if (error) throw error
-      }
-
-      setMedia(updatedMedia)
-      if (!isSupabaseReady || !session) storeMedia(updatedMedia)
-      setSelectedMedia(updatedMedia.find((item) => item.id === id) || null)
+      storeMedia(updatedMedia)
       toast({
         title: "Success",
         description: "Media updated successfully.",
@@ -272,13 +138,26 @@ export default function Home() {
     }
   }
 
-  const filterOptions = [
-    { name: "TMDB Rating", key: "tmdbRating", options: ["Top Rated", "Lowest Rated"] },
-    { name: "Your Rating", key: "userRating", options: ["Top Rated", "Lowest Rated"] },
-    { name: "Date Added", key: "dateAdded", options: ["Latest", "Oldest"] },
-  ]
+  const handleDeleteMedia = async (id: string) => {
+    try {
+      const updatedMedia = media.filter((item) => item.id !== id)
+      setMedia(updatedMedia)
+      storeMedia(updatedMedia)
+      toast({
+        title: "Success",
+        description: "Media deleted from your library.",
+      })
+    } catch (error) {
+      console.error("Error deleting media:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete media. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
-  function applyFilters(newFilters:any) {
+  const applyFilters = (newFilters) => {
     setActiveFilters(newFilters)
     const filtered = [...media]
 
@@ -303,35 +182,16 @@ export default function Home() {
     setFilteredMedia(filtered)
   }
 
-  function clearFilters() {
-    const clearedFilters = {
+  const clearFilters = () => {
+    setActiveFilters({
       tmdbRating: "",
       userRating: "",
       dateAdded: "",
-    }
-    setActiveFilters(clearedFilters)
+    })
     setFilteredMedia([])
   }
 
-  function onDragEnd(result:any) {
-    if (!result.destination) return
-
-    const items = Array.from(media)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    setMedia(items)
-    if (isSupabaseReady && session) {
-      // Update the order in Supabase
-      items.forEach((item, index) => {
-        supabase!.from("media").update({ order: index }).eq("id", item.id)
-      })
-    } else {
-      storeMedia(items)
-    }
-  }
-
-  function exportMedia() {
+  const exportMedia = () => {
     const dataStr = JSON.stringify(media)
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
     const exportFileDefaultName = "binger_media_export.json"
@@ -342,21 +202,13 @@ export default function Home() {
     linkElement.click()
   }
 
-  async function handleImportMedia(mediaToImport: Media[]) {
+  const handleImportMedia = async (mediaToImport: Media[]) => {
     try {
-      console.log("Importing media:", mediaToImport)
       const newMedia = mediaToImport.filter(
         (importedItem) => !media.some((existingItem) => existingItem.id === importedItem.id),
       )
       const updatedMedia = [...media, ...newMedia]
       setMedia(updatedMedia)
-
-      if (isSupabaseReady && session) {
-        const { error } = await supabase!.from("media").insert(newMedia)
-        if (error) throw error
-      }
-
-      // Always store in localStorage (cookies)
       storeMedia(updatedMedia)
 
       toast({
@@ -365,7 +217,6 @@ export default function Home() {
       })
     } catch (error) {
       console.error("Error importing media:", error)
-      console.log("Error details:", JSON.stringify(error, null, 2))
       toast({
         title: "Import Failed",
         description: "There was an error importing the media. Please try again.",
@@ -379,6 +230,17 @@ export default function Home() {
     return mediaToFilter.filter((item) => item.title.toLowerCase().includes(searchQuery.toLowerCase()))
   }
 
+  const displayedMedia = filteredMedia.length > 0 ? filteredMediaBySearch(filteredMedia) : filteredMediaBySearch(media)
+
+  const handleSaveReorganizedMedia = (newOrder: Media[]) => {
+    setMedia(newOrder)
+    storeMedia(newOrder)
+    toast({
+      title: "Success",
+      description: "Media order updated successfully.",
+    })
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -389,127 +251,22 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="container py-10">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
-              <h1 className="text-3xl sm:text-4xl font-bold">Binger</h1>
-              <div className="flex flex-wrap items-center gap-4">
-                <ThemeToggle />
-                {isSupabaseReady && session ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Avatar>
-                        <AvatarImage src={session.user.user_metadata.avatar_url} />
-                        <AvatarFallback>
-                          <User className="w-4 h-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuLabel>{session.user.email}</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          await supabase?.auth.signOut()
-                          router.push("/login")
-                        }}
-                      >
-                        Sign out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button onClick={() => router.push("/login")}>Login</Button>
-                )}
-                <AddMediaDialog onAdd={handleAddMedia} />
-              </div>
-            </div>
-
-            {configError && (
-              <Alert variant="destructive" className="mb-8">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Configuration Error</AlertTitle>
-                <AlertDescription>{configError}</AlertDescription>
-              </Alert>
-            )}
+            <NavBar onAddMedia={handleAddMedia} />
 
             <Stats media={media} />
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 space-y-4 sm:space-y-0">
-              <div className="flex items-center space-x-4 w-full sm:w-auto">
-              <h2 className="text-2xl font-bold">Collection</h2>
-                <Input
-                  type="text"
-                  placeholder="Search media..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full sm:w-64"
-                />
-              </div>
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">All</SelectItem>
-                    <SelectItem value="Watched">Watched</SelectItem>
-                    <SelectItem value="Wishlist">Wishlist</SelectItem>
-                    <SelectItem value="Streaming">Streaming</SelectItem>
-                  </SelectContent>
-                </Select>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>
-                        <Filter className="mr-2 h-4 w-4" />
-                        <span>Filter</span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
-                        <ScrollArea className="h-[300px]">
-                          {filterOptions.map((filterGroup) => (
-                            <div key={filterGroup.key}>
-                              <DropdownMenuLabel>{filterGroup.name}</DropdownMenuLabel>
-                              <DropdownMenuRadioGroup
-                                value={activeFilters[filterGroup.key]}
-                                onValueChange={(value) => {
-                                  const newFilters = { ...activeFilters, [filterGroup.key]: value }
-                                  applyFilters(newFilters)
-                                }}
-                              >
-                                <DropdownMenuRadioItem value="">All {filterGroup.name}</DropdownMenuRadioItem>
-                                {filterGroup.options.map((option) => (
-                                  <DropdownMenuRadioItem key={option} value={option}>
-                                    {option}
-                                  </DropdownMenuRadioItem>
-                                ))}
-                              </DropdownMenuRadioGroup>
-                              <DropdownMenuSeparator />
-                            </div>
-                          ))}
-                        </ScrollArea>
-                        <DropdownMenuItem onSelect={clearFilters}>Clear Filters</DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <DropdownMenuItem onSelect={() => setIsReorganizing(!isReorganizing)}>
-                      <ArrowUpDown className="mr-2 h-4 w-4" />
-                      <span>{isReorganizing ? "Save Order" : "Re-Organize"}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setShowImportDialog(true)}>
-                      <FileJson className="mr-2 h-4 w-4" />
-                      <span>Import</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={exportMedia}>
-                      <Download className="mr-2 h-4 w-4" />
-                      <span>Export</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
+            <MediaFilters
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              activeFilters={activeFilters}
+              applyFilters={applyFilters}
+              clearFilters={clearFilters}
+              setShowImportDialog={setShowImportDialog}
+              exportMedia={exportMedia}
+              setIsReorganizerOpen={setIsReorganizerOpen}
+            />
 
             {isLoading ? (
               <p>Loading your media library...</p>
@@ -518,58 +275,20 @@ export default function Home() {
                 {media.length === 0 ? (
                   <EmptyMediaState />
                 ) : (
-                  <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="media-list">
-                      {(provided:any) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-                        >
-                          <AnimatePresence>
-                            {(filteredMedia.length > 0
-                              ? filteredMediaBySearch(filteredMedia)
-                              : filteredMediaBySearch(media)
-                            )
-                              .filter((item) => selectedCategory === "All" || item.category === selectedCategory)
-                              .map((item, index) => (
-                                <Draggable
-                                  key={item.id}
-                                  draggableId={item.id}
-                                  index={index}
-                                  isDragDisabled={!isReorganizing}
-                                >
-                                  {(provided:any) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                    >
-                                      <MediaCard media={item} onClick={() => setSelectedMedia(item)} index={index} />
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))}
-                          </AnimatePresence>
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
+                  <MediaGrid
+                    media={displayedMedia.filter(
+                      (item) => selectedCategory === "All" || item.category === selectedCategory,
+                    )}
+                    onUpdate={handleUpdateMedia}
+                    onDelete={handleDeleteMedia}
+                  />
                 )}
                 {media.length > 0 &&
-                  (filteredMedia.length > 0 ? filteredMedia : media).filter(
-                    (item) => selectedCategory === "All" || item.category === selectedCategory,
-                  ).length === 0 && <p className="text-center mt-8">No media added in this category.</p>}
+                  displayedMedia.filter((item) => selectedCategory === "All" || item.category === selectedCategory)
+                    .length === 0 && <p className="text-center mt-8">No media found in this category.</p>}
               </>
             )}
 
-            <MediaSheet
-              media={selectedMedia}
-              onClose={() => setSelectedMedia(null)}
-              onDelete={handleDeleteMedia}
-              onUpdate={handleUpdateMedia}
-            />
             <ImportDialog
               isOpen={showImportDialog}
               onClose={() => setShowImportDialog(false)}
@@ -577,7 +296,14 @@ export default function Home() {
             />
           </div>
         </motion.div>
+        <MediaReorganizer
+          isOpen={isReorganizerOpen}
+          onClose={() => setIsReorganizerOpen(false)}
+          media={media}
+          onSave={handleSaveReorganizedMedia}
+        />
       </ThemeProvider>
     </ErrorBoundary>
   )
 }
+

@@ -18,7 +18,7 @@ export async function searchTMDB(query: string): Promise<TMDBSearchResult[]> {
 
 export async function getTMDBDetails(id: number, type: "movie" | "tv"): Promise<TMDBDetails> {
   try {
-    const response = await fetch(`${API_BASE_URL}?action=details&id=${id}&type=${type}`)
+    const response = await fetch(`${API_BASE_URL}?action=details&id=${id}&type=${type}&append_to_response=videos`)
     if (!response.ok) {
       throw new Error(`API error: ${response.status} ${response.statusText}`)
     }

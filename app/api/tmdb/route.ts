@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const query = searchParams.get("query")
   const id = searchParams.get("id")
   const type = searchParams.get("type") as "movie" | "tv"
+  const appendToResponse = searchParams.get("append_to_response")
 
   try {
     let data: TMDBSearchResult[] | TMDBDetails
@@ -36,7 +37,11 @@ export async function GET(request: Request) {
       const result = await fetchTMDB("/search/multi", { query, include_adult: "false" })
       data = result.results as TMDBSearchResult[]
     } else if (action === "details" && id && type) {
-      data = (await fetchTMDB(`/${type}/${id}`)) as TMDBDetails
+      const params: Record<string, string> = {}
+      if (appendToResponse) {
+        params.append_to_response = appendToResponse
+      }
+      data = (await fetchTMDB(`/${type}/${id}`, params)) as TMDBDetails
     } else {
       throw new Error("Invalid action or missing parameters")
     }
@@ -47,3 +52,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "An error occurred while fetching data from TMDB" }, { status: 500 })
   }
 }
+

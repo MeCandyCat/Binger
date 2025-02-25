@@ -1,3 +1,4 @@
+import type React from "react"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -95,3 +96,4 @@ export function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
     </Dialog>
   )
 }
+

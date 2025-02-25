@@ -1,6 +1,6 @@
 "use server"
 
-import { type Media, TMDBDetails } from "@/types"
+import type { Media } from "@/types"
 import { getTMDBDetails } from "@/lib/tmdb"
 
 // This would be replaced with your actual database
