@@ -100,6 +100,12 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
     setIsRefreshing(true)
     try {
       const updatedDetails = await getTMDBDetails(media.tmdbId, media.type)
+
+      const videos = updatedDetails.videos?.results || []
+      const trailer = videos.find(
+        (video) => video.site === "YouTube" && (video.type === "Trailer" || video.type === "Teaser") && video.official,
+      )
+
       onUpdate(media.id, {
         title: updatedDetails.title || updatedDetails.name || media.title,
         posterPath: updatedDetails.poster_path || media.posterPath,
@@ -108,6 +114,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
         runtime: media.type === "movie" ? updatedDetails.runtime || media.runtime : media.runtime,
         overview: updatedDetails.overview || media.overview,
         seasons: media.type === "tv" ? updatedDetails.number_of_seasons || media.seasons : media.seasons,
+        trailerKey: trailer?.key || null,
       })
     } catch (error) {
       console.error("Error refreshing media data:", error)
@@ -191,8 +198,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
             <X className="h-4 w-4" />
           </Button>
         </div>
-        
-        {/* Single scrollable container for all content including footer */}
+
         <div className="h-full overflow-y-auto">
           {/* Media preview section */}
           <div className="relative">
@@ -255,13 +261,11 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                 </div>
               )}
             </div>
-
             {/* Overview Section */}
             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-2 mx-4">
               <h3 className="font-medium">Overview</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{media.overview}</p>
             </div>
-
             {/* Content (Edit form or display) */}
             {isEditing ? (
               <form
@@ -424,21 +428,20 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                 )}
               </div>
             )}
-
-            {/* Footer Actions - now part of the scrollable content */}
-            <div className="p-4 border-t bg-black/20 backdrop-blur-sm mx-4 mb-4 rounded-lg">
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
-                  <Trash className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </div>
           </div>
+        </div>
+
+        <div className="p-4 border-t bg-black/20 backdrop-blur-sm mx-4 mb-4 rounded-lg">
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
+              <Trash className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
+            </div>
         </div>
       </SheetContent>
 
