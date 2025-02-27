@@ -228,7 +228,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
           </div>
 
           {/* Content sections */}
-          <div className="space-y-6">
+          <div className="space-y-6 pb-4">
             {/* Info Section */}
             <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-4 mx-4 mt-4">
               <RatingDisplay />
@@ -309,16 +309,8 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <Label className="text-sm font-medium">TV Show Details</Label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsCustomTVDetails(!isCustomTVDetails)}
-                        >
-                          {isCustomTVDetails ? (
-                            <Lock className="h-4 w-4 mr-2" />
-                          ) : (
-                            <Unlock className="h-4 w-4 mr-2" />
-                          )}
+                        <Button variant="outline" size="sm" onClick={() => setIsCustomTVDetails(!isCustomTVDetails)}>
+                          {isCustomTVDetails ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
                           {isCustomTVDetails ? "Lock" : "Unlock"}
                         </Button>
                       </div>
@@ -429,38 +421,39 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
               </div>
             )}
           </div>
-        </div>
-
-        <div className="p-4 border-t bg-black/20 backdrop-blur-sm mx-4 mb-4 rounded-lg">
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit
-            </Button>
-            <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
-              <Trash className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
+          
+          {/* Actions Section */}
+          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 mx-4">
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
             </div>
         </div>
-      </SheetContent>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {media.title}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove this item from your library. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {media.title}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove this item from your library. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </SheetContent>
     </Sheet>
   )
 }
