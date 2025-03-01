@@ -1,3 +1,9 @@
+export type Settings = {
+  showMovieLogos: boolean
+  animateCards?: boolean
+  autoplayTrailers?: boolean
+}
+
 export type Media = {
   episodeDuration: number
   episodesPerSeason: number

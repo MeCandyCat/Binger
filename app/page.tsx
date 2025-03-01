@@ -14,6 +14,7 @@ import { NavBar } from "@/components/nav-bar"
 import { MediaFilters } from "@/components/media-filters"
 import { ImportDialog } from "@/components/import-dialog"
 import { MediaReorganizer } from "@/components/media-reorganizer"
+import { useMediaLibrary } from "@/hooks/use-media-library"
 
 export function EmptyMediaState() {
   return (
@@ -25,7 +26,7 @@ export function EmptyMediaState() {
 }
 
 export default function Home() {
-  const [media, setMedia] = useState<Media[]>([])
+  const { media, setMedia } = useMediaLibrary()
   const [isLoading, setIsLoading] = useState(true)
   const [filteredMedia, setFilteredMedia] = useState<Media[]>([])
   const [activeFilters, setActiveFilters] = useState({
@@ -47,7 +48,7 @@ export default function Home() {
     }
 
     loadMedia()
-  }, [])
+  }, [setMedia])
 
   const handleAddMedia = async (
     tmdbId: number,
@@ -313,3 +314,4 @@ export default function Home() {
     </ErrorBoundary>
   )
 }
+

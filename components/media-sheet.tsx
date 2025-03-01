@@ -23,6 +23,7 @@ import type { Media } from "@/types"
 import { Label } from "@/components/ui/label"
 import { useSwipeable } from "react-swipeable"
 import { MediaPreview } from "@/components/media-preview"
+import { useSettings } from "@/hooks/use-settings"
 
 interface MediaSheetProps {
   media: Media | null
@@ -45,6 +46,8 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
   const [episodeDuration, setEpisodeDuration] = useState(0)
   const [isCustomTVDetails, setIsCustomTVDetails] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const { settings } = useSettings()
 
   useEffect(() => {
     if (media) {
@@ -177,7 +180,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
 
   return (
     <Sheet open={!!media} onOpenChange={handleClose}>
-      <SheetContent className="p-0 sm:max-w-xl w-full" {...swipeHandlers}>
+      <SheetContent className="p-0 w-full sm:max-w-xl" {...swipeHandlers}>
         {/* Fixed position buttons for close and refresh */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           <Button
@@ -199,7 +202,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
           </Button>
         </div>
 
-        <div className="h-full overflow-y-auto">
+        <div className="h-[calc(100vh-2rem)] overflow-y-auto">
           {/* Media preview section */}
           <div className="relative">
             <MediaPreview media={media}>
@@ -207,10 +210,18 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                 <img
                   src={`https://image.tmdb.org/t/p/w500${media.posterPath}`}
                   alt={media.title}
-                  className="w-24 aspect-[2/3] rounded-lg shadow-lg hidden sm:block"
+                  className="w-20 sm:w-24 aspect-[2/3] rounded-lg shadow-lg hidden sm:block"
                 />
                 <div className="flex-1">
-                  <h2 className="text-2xl font-semibold text-white mb-1">{media.title}</h2>
+                  {settings.showMovieLogos && media.logo ? (
+                    <img
+                      src={media.logo || "/placeholder.svg"}
+                      alt={media.title}
+                      className="h-16 object-contain mb-2"
+                    />
+                  ) : (
+                    <h2 className="text-2xl font-semibold text-white mb-1">{media.title}</h2>
+                  )}
                   {media.type === "movie" ? (
                     <p className="text-sm text-white/80">
                       {media.release_date ? new Date(media.release_date).getFullYear() : "Unknown"} •{" "}
@@ -228,9 +239,9 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
           </div>
 
           {/* Content sections */}
-          <div className="space-y-6 pb-4">
+          <div className="space-y-4 sm:space-y-6 pb-4">
             {/* Info Section */}
-            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-4 mx-4 mt-4">
+            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 sm:p-4 space-y-4 mx-2 sm:mx-4 mt-4">
               <RatingDisplay />
               <div className="flex flex-wrap gap-2">
                 <Badge>{media.type === "movie" ? "Movie" : "TV Show"}</Badge>
@@ -262,7 +273,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
               )}
             </div>
             {/* Overview Section */}
-            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 space-y-2 mx-4">
+            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 sm:p-4 space-y-2 mx-2 sm:mx-4">
               <h3 className="font-medium">Overview</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{media.overview}</p>
             </div>
@@ -273,7 +284,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                   e.preventDefault()
                   handleUpdate()
                 }}
-                className="space-y-4 bg-black/20 backdrop-blur-sm p-4 rounded-lg mx-4"
+                className="space-y-4 bg-black/20 backdrop-blur-sm p-3 sm:p-4 rounded-lg mx-2 sm:mx-4"
               >
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Rating</label>
@@ -396,7 +407,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                 </div>
               </form>
             ) : (
-              <div className="space-y-4 bg-black/20 backdrop-blur-sm p-4 rounded-lg mx-4">
+              <div className="space-y-4 bg-black/20 backdrop-blur-sm p-3 sm:p-4 rounded-lg mx-2 sm:mx-4">
                 <div className="space-y-2">
                   <h3 className="font-medium">Notes</h3>
                   <p className="text-sm text-muted-foreground">{note || "No notes added."}</p>
@@ -421,20 +432,19 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
               </div>
             )}
           </div>
-          
           {/* Actions Section */}
-          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-4 mx-4">
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
-                  <Trash className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
+          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-3 sm:p-4 mx-2 sm:mx-4">
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setIsEditing(!isEditing)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+              <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteDialog(true)}>
+                <Trash className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
             </div>
+          </div>
         </div>
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -457,3 +467,4 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
     </Sheet>
   )
 }
+
