@@ -18,8 +18,12 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useDebounce } from "@/hooks/use-debounce"
+import { useMediaLibrary } from "@/hooks/use-media-library"
+import { toast } from "@/components/ui/use-toast"
 
-interface AddMediaDialogProps {
+export function AddMediaDialog({
+  onAdd,
+}: {
   onAdd: (
     tmdbId: number,
     type: "movie" | "tv",
@@ -31,10 +35,10 @@ interface AddMediaDialogProps {
     episodesPerSeason?: number,
     episodeDuration?: number,
     completedSeasons?: number,
+    logo?: string,
   ) => Promise<void>
-}
-
-export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
+}) {
+  const { media } = useMediaLibrary()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<TMDBSearchResult[]>([])
@@ -52,14 +56,10 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const [category, setCategory] = useState<"Watched" | "Wishlist" | "Streaming">("Watched")
   const [searchQuery, setSearchQuery] = useState("")
+  const [logo, setLogo] = useState<string | undefined>(undefined)
   const debouncedQuery = useDebounce(searchQuery, 300)
 
-  useEffect(() => {
-    if (selected) {
-      fetchDetails()
-    }
-  }, [selected])
-
+  // Search for media when query changes
   useEffect(() => {
     async function performSearch() {
       if (!debouncedQuery) {
@@ -73,6 +73,11 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
         setResults(results.filter((r) => r.media_type === "movie" || r.media_type === "tv"))
       } catch (error) {
         console.error("Error searching for media:", error)
+        toast({
+          title: "Search Error",
+          description: "Failed to search for media. Please try again.",
+          variant: "destructive",
+        })
       } finally {
         setLoading(false)
       }
@@ -81,46 +86,93 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
     performSearch()
   }, [debouncedQuery])
 
-  async function fetchDetails() {
-    if (!selected) return
-    try {
-      const details = await getTMDBDetails(selected.id, selected.media_type)
-      if (selected.media_type === "movie") {
-        setDuration(details.runtime || 0)
-      } else {
-        setSeasons(details.number_of_seasons || 0)
-        setEpisodesPerSeason(
-          details.number_of_episodes ? Math.ceil(details.number_of_episodes / (details.number_of_seasons || 1)) : 0,
-        )
-        setEpisodeDuration(details.episode_run_time?.[0] || 0)
+  // Fetch details when media is selected
+  useEffect(() => {
+    async function fetchDetails() {
+      if (!selected) return
+      try {
+        const details = await getTMDBDetails(selected.id, selected.media_type)
+
+        // Set movie or TV show details
+        if (selected.media_type === "movie") {
+          setDuration(details.runtime || 0)
+        } else {
+          setSeasons(details.number_of_seasons || 0)
+          setEpisodesPerSeason(
+            details.number_of_episodes ? Math.ceil(details.number_of_episodes / (details.number_of_seasons || 1)) : 0,
+          )
+          setEpisodeDuration(details.episode_run_time?.[0] || 0)
+        }
+
+        // Find and set logo
+        const englishLogo = details.images?.logos.find((logo) => logo.iso_639_1 === "en")
+        if (englishLogo) {
+          setLogo(`https://image.tmdb.org/t/p/w500${englishLogo.file_path}`)
+        }
+      } catch (error) {
+        console.error("Error fetching details:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch media details. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
-      console.error("Error fetching details:", error)
     }
-  }
+
+    fetchDetails()
+  }, [selected])
 
   async function handleAdd() {
     if (!selected) return
 
-    let finalDuration = duration
-    if (selected.media_type === "tv" && seasons && episodesPerSeason && episodeDuration) {
-      finalDuration = seasons * episodesPerSeason * episodeDuration
+    try {
+      // Check if media already exists
+      const exists = media.some((item) => item.tmdbId === selected.id && item.type === selected.media_type)
+
+      if (exists) {
+        toast({
+          title: "Already in Library",
+          description: "This title is already in your library.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Calculate duration for TV shows
+      let finalDuration = duration
+      if (selected.media_type === "tv" && seasons && episodesPerSeason && episodeDuration) {
+        finalDuration = seasons * episodesPerSeason * episodeDuration
+      }
+
+      await onAdd(
+        selected.id,
+        selected.media_type,
+        rating[0],
+        category,
+        note,
+        finalDuration || undefined,
+        seasons || undefined,
+        episodesPerSeason || undefined,
+        episodeDuration || undefined,
+        category === "Streaming" ? completedSeasons : undefined,
+        logo,
+      )
+
+      resetForm()
+      setOpen(false)
+
+      toast({
+        title: "Success",
+        description: "Added to your library successfully.",
+      })
+    } catch (error) {
+      console.error("Error adding media:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add media. Please try again.",
+        variant: "destructive",
+      })
     }
-
-    await onAdd(
-      selected.id,
-      selected.media_type,
-      rating[0],
-      category,
-      note,
-      finalDuration || undefined,
-      seasons || undefined,
-      episodesPerSeason || undefined,
-      episodeDuration || undefined,
-      category === "Streaming" ? completedSeasons : undefined,
-    )
-
-    resetForm()
   }
 
   function resetForm() {
@@ -137,6 +189,9 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
     setResults([])
     setOpen(false)
     setSearchQuery("")
+    setLogo(undefined)
+    setRating([5])
+    setCategory("Watched")
   }
 
   const dialogContent = (
@@ -219,7 +274,13 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
                 <p className="text-sm mt-2">{selected.overview}</p>
               </div>
             </div>
-
+            {logo && (
+              <img
+                src={logo || "/placeholder.svg"}
+                alt={`${selected.title || selected.name} logo`}
+                className="w-32 rounded-lg mt-4"
+              />
+            )}
             <div className="space-y-2">
               <Label>Your Rating</Label>
               <div className="text-center mb-2">Rating: {rating[0].toFixed(1)}/10</div>
@@ -254,7 +315,12 @@ export function AddMediaDialog({ onAdd }: AddMediaDialogProps) {
                     disabled={!isCustomDuration}
                     className="mr-2"
                   />
-                  <Button variant="outline" size="icon" onClick={() => setIsCustomDuration(!isCustomDuration)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsCustomDuration(!isCustomDuration)}
+                  >
                     {isCustomDuration ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                   </Button>
                 </div>

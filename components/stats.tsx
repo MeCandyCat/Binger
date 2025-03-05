@@ -35,26 +35,42 @@ export function Stats({ media }: StatsProps) {
   useEffect(() => {
     const calculateTotalMinutes = (mediaList: Media[]) => {
       return mediaList.reduce((acc, item) => {
+        // If there's a custom duration, use that regardless of media type
+        if (item.customDuration) {
+          return acc + item.customDuration
+        }
+
         if (item.type === "movie") {
-          return acc + (item.customDuration || item.runtime)
+          // For movies, use runtime
+          return acc + (item.runtime || 0)
         } else if (item.type === "tv") {
-          if (item.customDuration) {
-            return acc + item.customDuration
-          } else if (item.seasons && item.episodesPerSeason && item.episodeDuration) {
-            const watchedSeasons = item.category === "Streaming" ? item.watchedSeasons || 0 : item.seasons
-            return acc + watchedSeasons * item.episodesPerSeason * item.episodeDuration
+          // For TV shows, ensure we have all required values
+          if (item.episodesPerSeason && item.episodeDuration) {
+            if (item.category === "Streaming") {
+              // For streaming shows, only count watched seasons
+              const watchedSeasons = item.watchedSeasons || 0
+              return acc + watchedSeasons * item.episodesPerSeason * item.episodeDuration
+            } else if (item.category === "Watched") {
+              // For watched shows, count all seasons
+              const totalSeasons = item.seasons || 0
+              return acc + totalSeasons * item.episodesPerSeason * item.episodeDuration
+            }
           }
         }
         return acc
       }, 0)
     }
 
+    // Calculate total watch time for both watched and streaming media
     const watchedMedia = media.filter((item) => item.category === "Watched")
     const streamingMedia = media.filter((item) => item.category === "Streaming")
-    const newTotalWatchTime = calculateTotalMinutes(watchedMedia) + calculateTotalMinutes(streamingMedia)
 
+    const watchedTime = calculateTotalMinutes(watchedMedia)
+    const streamingTime = calculateTotalMinutes(streamingMedia)
+
+    const newTotalWatchTime = watchedTime + streamingTime
     setTotalWatchTime(newTotalWatchTime)
-  }, [media])
+  }, [media]) // This will re-run whenever media array changes
 
   const totalShows = media.filter((item) => item.type === "tv" && item.category !== "Wishlist").length
   const totalMovies = media.filter((item) => item.type === "movie" && item.category !== "Wishlist").length

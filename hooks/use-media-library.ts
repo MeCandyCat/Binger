@@ -24,6 +24,7 @@ export function useMediaLibrary() {
     episodesPerSeason?: number,
     episodeDuration?: number,
     completedSeasons?: number,
+    providedLogo?: string, // Make logo parameter optional
   ) => {
     const existingMedia = media.find((item) => item.tmdbId === tmdbId && item.type === type)
     if (existingMedia) {
@@ -38,6 +39,16 @@ export function useMediaLibrary() {
       (video) => video.site === "YouTube" && (video.type === "Trailer" || video.type === "Teaser") && video.official,
     )
 
+    // Find logo if not provided
+    let logo = providedLogo
+    if (!logo) {
+      const englishLogo = details.images?.logos.find((logo) => logo.iso_639_1 === "en")
+      if (englishLogo) {
+        logo = `https://image.tmdb.org/t/p/w500${englishLogo.file_path}`
+      }
+    }
+
+    // Calculate duration for TV shows if not provided
     let duration = customDuration
     if (type === "tv" && !customDuration && seasons && episodesPerSeason && episodeDuration) {
       duration = seasons * episodesPerSeason * episodeDuration
@@ -65,21 +76,58 @@ export function useMediaLibrary() {
       release_date: details.release_date,
       first_air_date: details.first_air_date,
       trailerKey: trailer?.key || null,
-      logo: details.images?.logos.find((logo) => logo.iso_639_1 === "en")?.file_path
-        ? `https://image.tmdb.org/t/p/w500${details.images.logos.find((logo) => logo.iso_639_1 === "en")?.file_path}`
-        : null,
+      logo, // Add the logo
     }
 
+    // Update state immediately
     const updatedMedia = [newMedia, ...media]
     setMedia(updatedMedia)
+
+    // Store in localStorage
     storeMedia(updatedMedia)
+
     return newMedia
+  }
+
+  const updateMedia = async (id: string, updates: Partial<Media>) => {
+    const updatedMedia = media.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          ...updates,
+          // Ensure TV show stats are properly updated
+          ...(item.type === "tv" && {
+            seasons: updates.seasons || item.seasons,
+            episodesPerSeason: updates.episodesPerSeason || item.episodesPerSeason,
+            episodeDuration: updates.episodeDuration || item.episodeDuration,
+            watchedSeasons: updates.category === "Streaming" ? updates.watchedSeasons || 0 : undefined,
+          }),
+        }
+      }
+      return item
+    })
+    setMedia(updatedMedia)
+    storeMedia(updatedMedia)
+  }
+
+  const deleteMedia = async (id: string) => {
+    const updatedMedia = media.filter((item) => item.id !== id)
+    setMedia(updatedMedia)
+    storeMedia(updatedMedia)
+  }
+
+  const reorderMedia = async (newOrder: Media[]) => {
+    setMedia(newOrder)
+    storeMedia(newOrder)
   }
 
   return {
     media,
     setMedia,
     addMedia,
+    updateMedia,
+    deleteMedia,
+    reorderMedia,
   }
 }
 

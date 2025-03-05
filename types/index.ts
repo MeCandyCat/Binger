@@ -1,12 +1,4 @@
-export type Settings = {
-  showMovieLogos: boolean
-  animateCards?: boolean
-  autoplayTrailers?: boolean
-}
-
 export type Media = {
-  episodeDuration: number
-  episodesPerSeason: number
   id: string
   tmdbId: number
   title: string
@@ -17,17 +9,17 @@ export type Media = {
   tmdbRating: number
   watchedAt: Date
   runtime: number
-  customDuration?: number
   note?: string
+  category: "Watched" | "Wishlist" | "Streaming"
+  customDuration?: number
   seasons?: number
-  overview?: string
+  episodesPerSeason?: number
+  episodeDuration?: number
+  watchedSeasons?: number
   release_date?: string
   first_air_date?: string
-  number_of_seasons?: number
-  category: "Watched" | "Wishlist" | "Streaming"
-  order?: number
-  watchedSeasons?: number
   trailerKey?: string | null
+  logo?: string
 }
 
 export type TMDBSearchResult = {
@@ -36,18 +28,23 @@ export type TMDBSearchResult = {
   name?: string
   poster_path: string
   backdrop_path?: string
-  media_type: "movie" | "tv"
-  first_air_date?: string
-  release_date?: string
+  media_type: string
   vote_average: number
   overview: string
 }
 
+export type TMDBLogo = {
+  file_path: string
+  iso_639_1: string
+}
+
 export type TMDBVideo = {
+  id: string
   key: string
+  name: string
   site: string
+  size: number
   type: string
-  official: boolean
 }
 
 export type TMDBDetails = {
@@ -64,4 +61,17 @@ export type TMDBDetails = {
   videos?: {
     results: TMDBVideo[]
   }
+  images?: {
+    logos: TMDBLogo[]
+  }
+  release_date?: string
+  first_air_date?: string
 }
+
+export type Settings = {
+  showMovieLogos: boolean
+  animateCards: boolean
+  autoplayTrailers: boolean
+  showListsInCollection?: boolean
+}
+

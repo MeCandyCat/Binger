@@ -62,6 +62,24 @@ export function DisplayTab() {
               }}
             />
           </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Show Lists in Collection</Label>
+              <p className="text-sm text-muted-foreground">
+                Display your lists alongside media in your main collection
+              </p>
+            </div>
+            <Switch
+              checked={settings.showListsInCollection || false}
+              onCheckedChange={(checked) => {
+                updateSettings({ ...settings, showListsInCollection: checked })
+                toast({
+                  title: "Settings updated",
+                  description: `Lists in collection are now ${checked ? "enabled" : "disabled"}`,
+                })
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </TabsContent>

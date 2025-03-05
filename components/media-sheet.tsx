@@ -75,6 +75,13 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
       seasons,
       episodesPerSeason,
       episodeDuration,
+      // Make sure we're passing all the TV show related stats
+      ...(media.type === "tv" && {
+        seasons,
+        episodesPerSeason,
+        episodeDuration,
+        watchedSeasons: category === "Streaming" ? watchedSeasons : undefined,
+      }),
     })
     setIsEditing(false)
   }, [
@@ -109,6 +116,10 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
         (video) => video.site === "YouTube" && (video.type === "Trailer" || video.type === "Teaser") && video.official,
       )
 
+      // Find logo
+      const englishLogo = updatedDetails.images?.logos.find((logo) => logo.iso_639_1 === "en")
+      const logoUrl = englishLogo ? `https://image.tmdb.org/t/p/w500${englishLogo.file_path}` : null
+
       onUpdate(media.id, {
         title: updatedDetails.title || updatedDetails.name || media.title,
         posterPath: updatedDetails.poster_path || media.posterPath,
@@ -118,6 +129,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
         overview: updatedDetails.overview || media.overview,
         seasons: media.type === "tv" ? updatedDetails.number_of_seasons || media.seasons : media.seasons,
         trailerKey: trailer?.key || null,
+        logo: logoUrl,
       })
     } catch (error) {
       console.error("Error refreshing media data:", error)
@@ -310,7 +322,16 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                         className="bg-black/20 mr-2"
                         disabled={!isCustomDuration}
                       />
-                      <Button variant="outline" size="icon" onClick={() => setIsCustomDuration(!isCustomDuration)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setIsCustomDuration(!isCustomDuration)
+                        }}
+                      >
                         {isCustomDuration ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -320,7 +341,16 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <Label className="text-sm font-medium">TV Show Details</Label>
-                        <Button variant="outline" size="sm" onClick={() => setIsCustomTVDetails(!isCustomTVDetails)}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setIsCustomTVDetails(!isCustomTVDetails)
+                          }}
+                        >
                           {isCustomTVDetails ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
                           {isCustomTVDetails ? "Lock" : "Unlock"}
                         </Button>
@@ -401,7 +431,15 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
 
                 <div className="flex gap-2 pt-2">
                   <Button type="submit">Save Changes</Button>
-                  <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setIsEditing(false)
+                    }}
+                  >
                     Cancel
                   </Button>
                 </div>

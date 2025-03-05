@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS: Settings = {
   showMovieLogos: true,
   animateCards: true,
   autoplayTrailers: true,
+  showListsInCollection: false,
 }
 
 export function getStoredSettings(): Settings {
@@ -15,7 +16,7 @@ export function getStoredSettings(): Settings {
   if (!stored) return DEFAULT_SETTINGS
 
   try {
-    return JSON.parse(stored) as Settings
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } as Settings
   } catch {
     return DEFAULT_SETTINGS
   }

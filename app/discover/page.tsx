@@ -12,8 +12,11 @@ import { MediaGrid } from "@/components/discover/media-grid"
 import { searchTMDB } from "@/lib/tmdb"
 import type { TMDBSearchResult } from "@/types"
 import { useDebounce } from "@/hooks/use-debounce"
+import { useMediaLibrary } from "@/hooks/use-media-library"
+import { toast } from "@/components/ui/use-toast"
 
 export default function DiscoverPage() {
+  const { media, addMedia } = useMediaLibrary()
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedQuery = useDebounce(searchQuery, 300)
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([])
@@ -40,7 +43,45 @@ export default function DiscoverPage() {
     performSearch()
   }, [debouncedQuery])
 
-  const handleAddMedia = async () => {}
+  const handleAddMedia = async (
+    tmdbId: number,
+    type: "movie" | "tv",
+    rating: number,
+    category: "Watched" | "Wishlist" | "Streaming",
+    note?: string,
+    customDuration?: number,
+    seasons?: number,
+    episodesPerSeason?: number,
+    episodeDuration?: number,
+    completedSeasons?: number,
+  ) => {
+    try {
+      await addMedia(
+        tmdbId,
+        type,
+        rating,
+        category,
+        note,
+        customDuration,
+        seasons,
+        episodesPerSeason,
+        episodeDuration,
+        completedSeasons,
+      )
+
+      toast({
+        title: "Success",
+        description: "Added to your library successfully.",
+      })
+    } catch (error) {
+      console.error("Error adding media:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add media. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
@@ -78,3 +119,4 @@ export default function DiscoverPage() {
     </ErrorBoundary>
   )
 }
+

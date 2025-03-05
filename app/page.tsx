@@ -4,9 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Stats } from "@/components/stats"
-import { MediaGrid } from "@/components/media-grid"
-import { getTMDBDetails } from "@/lib/tmdb"
-import { getStoredMedia, storeMedia } from "@/lib/storage"
+import { storeMedia } from "@/lib/storage"
 import type { Media } from "@/types"
 import ErrorBoundary from "@/components/error-boundary"
 import { toast } from "@/components/ui/use-toast"
@@ -15,6 +13,27 @@ import { MediaFilters } from "@/components/media-filters"
 import { ImportDialog } from "@/components/import-dialog"
 import { MediaReorganizer } from "@/components/media-reorganizer"
 import { useMediaLibrary } from "@/hooks/use-media-library"
+import { useLists } from "@/hooks/use-lists"
+import { useSettings } from "@/hooks/use-settings"
+import { ListSheet } from "@/components/lists/list-sheet"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ListIcon } from "lucide-react"
+import { MediaCard } from "@/components/media-card"
+import { MediaSheet } from "@/components/media-sheet"
+import { ListPoster } from "@/components/lists/list-poster"
+
+const fadeInAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.05,
+      duration: 0.5,
+    },
+  }),
+}
 
 export function EmptyMediaState() {
   return (
@@ -26,7 +45,9 @@ export function EmptyMediaState() {
 }
 
 export default function Home() {
-  const { media, setMedia } = useMediaLibrary()
+  const { media, addMedia, updateMedia, deleteMedia, reorderMedia } = useMediaLibrary()
+  const { lists } = useLists()
+  const { settings } = useSettings()
   const [isLoading, setIsLoading] = useState(true)
   const [filteredMedia, setFilteredMedia] = useState<Media[]>([])
   const [activeFilters, setActiveFilters] = useState({
@@ -38,136 +59,24 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const [searchQuery, setSearchQuery] = useState("")
   const [isReorganizerOpen, setIsReorganizerOpen] = useState(false)
+  const [selectedList, setSelectedList] = useState(null)
+  const [selectedMedia, setSelectedMedia] = useState<Media | null>(null)
 
+  // Load initial media and handle loading state
   useEffect(() => {
-    const loadMedia = async () => {
-      setIsLoading(true)
-      const storedMedia = getStoredMedia()
-      setMedia(storedMedia)
-      setIsLoading(false)
+    setIsLoading(false)
+  }, [])
+
+  // Update filtered media whenever the main media array changes
+  useEffect(() => {
+    if (activeFilters.tmdbRating || activeFilters.userRating || activeFilters.dateAdded) {
+      applyFilters(activeFilters)
     }
-
-    loadMedia()
-  }, [setMedia])
-
-  const handleAddMedia = async (
-    tmdbId: number,
-    type: "movie" | "tv",
-    rating: number,
-    category: "Watched" | "Wishlist" | "Streaming",
-    note?: string,
-    customDuration?: number,
-    seasons?: number,
-    episodesPerSeason?: number,
-    episodeDuration?: number,
-    completedSeasons?: number,
-  ) => {
-    try {
-      const existingMedia = media.find((item) => item.tmdbId === tmdbId && item.type === type)
-      if (existingMedia) {
-        toast({
-          title: "Media already exists",
-          description: `${existingMedia.title} is already in your library.`,
-          variant: "destructive",
-        })
-        return
-      }
-
-      const details = await getTMDBDetails(tmdbId, type)
-
-      // Find trailer
-      const videos = details.videos?.results || []
-      const trailer = videos.find(
-        (video) => video.site === "YouTube" && (video.type === "Trailer" || video.type === "Teaser") && video.official,
-      )
-
-      let duration = customDuration
-      if (type === "tv" && !customDuration && seasons && episodesPerSeason && episodeDuration) {
-        duration = seasons * episodesPerSeason * episodeDuration
-      }
-
-      const newMedia: Media = {
-        id: Math.random().toString(36).substring(7),
-        tmdbId,
-        title: details.title || details.name || "",
-        type,
-        posterPath: details.poster_path,
-        backdropPath: details.backdrop_path,
-        rating,
-        tmdbRating: details.vote_average,
-        watchedAt: new Date(),
-        runtime: type === "movie" ? details.runtime || 0 : 0,
-        customDuration: duration,
-        note,
-        overview: details.overview,
-        category,
-        watchedSeasons: category === "Streaming" && type === "tv" ? completedSeasons : undefined,
-        seasons: type === "tv" ? seasons : undefined,
-        episodesPerSeason: type === "tv" ? episodesPerSeason : undefined,
-        episodeDuration: type === "tv" ? episodeDuration : undefined,
-        release_date: details.release_date,
-        first_air_date: details.first_air_date,
-        trailerKey: trailer?.key || null,
-      }
-
-      const updatedMedia = [newMedia, ...media]
-      setMedia(updatedMedia)
-      storeMedia(updatedMedia)
-      toast({
-        title: "Success",
-        description: `Added ${newMedia.title} to your library.`,
-      })
-    } catch (error) {
-      console.error("Error adding media:", error)
-      toast({
-        title: "Error",
-        description: "Failed to add media. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleUpdateMedia = async (id: string, updates: Partial<Media>) => {
-    try {
-      const updatedMedia = media.map((item) => (item.id === id ? { ...item, ...updates } : item))
-      setMedia(updatedMedia)
-      storeMedia(updatedMedia)
-      toast({
-        title: "Success",
-        description: "Media updated successfully.",
-      })
-    } catch (error) {
-      console.error("Error updating media:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update media. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleDeleteMedia = async (id: string) => {
-    try {
-      const updatedMedia = media.filter((item) => item.id !== id)
-      setMedia(updatedMedia)
-      storeMedia(updatedMedia)
-      toast({
-        title: "Success",
-        description: "Media deleted from your library.",
-      })
-    } catch (error) {
-      console.error("Error deleting media:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete media. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
+  }, [activeFilters]) // Updated dependency
 
   const applyFilters = (newFilters) => {
     setActiveFilters(newFilters)
-    const filtered = [...media]
+    const filtered = [...media] // Use the current media array
 
     if (newFilters.tmdbRating) {
       filtered.sort((a, b) =>
@@ -216,7 +125,6 @@ export default function Home() {
         (importedItem) => !media.some((existingItem) => existingItem.id === importedItem.id),
       )
       const updatedMedia = [...media, ...newMedia]
-      setMedia(updatedMedia)
       storeMedia(updatedMedia)
 
       toast({
@@ -241,12 +149,56 @@ export default function Home() {
   const displayedMedia = filteredMedia.length > 0 ? filteredMediaBySearch(filteredMedia) : filteredMediaBySearch(media)
 
   const handleSaveReorganizedMedia = (newOrder: Media[]) => {
-    setMedia(newOrder)
-    storeMedia(newOrder)
+    reorderMedia(newOrder)
     toast({
       title: "Success",
       description: "Media order updated successfully.",
     })
+  }
+
+  // Filter lists by search query
+  const filteredLists = lists.filter(
+    (list) => !searchQuery || list.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  // Render a list card for the collection view
+  const ListCard = ({ list, index }) => {
+    return (
+      <div key={`list-${list.id}`}>
+        <Card
+          className="group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-xl h-full border-2"
+          style={{ borderColor: list.color }}
+          onClick={() => setSelectedList(list)}
+        >
+          <div className="aspect-[2/3] relative">
+            {list.poster && !list.poster.includes("placeholder.svg") ? (
+              <img src={list.poster || "/placeholder.svg"} alt={list.name} className="object-cover w-full h-full" />
+            ) : (
+              <ListPoster
+                title={list.name}
+                color={list.color}
+                itemCount={list.items.length}
+                className="w-full h-full"
+              />
+            )}
+            <div className="absolute top-2 right-2 z-20">
+              <Badge className="bg-black/20 hover:bg-black/30 backdrop-blur-lg text-white flex items-center gap-1">
+                <ListIcon className="w-3 h-3" />
+                <span>{list.items.length}</span>
+              </Badge>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <h3 className="font-semibold text-white text-lg mb-2">{list.name}</h3>
+                <div className="mt-2 text-xs text-white/60">
+                  {list.items.length} item{list.items.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -259,7 +211,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="container py-10">
-            <NavBar onAddMedia={handleAddMedia} />
+            <NavBar onAddMedia={addMedia} />
 
             <Stats media={media} />
 
@@ -280,20 +232,42 @@ export default function Home() {
               <p>Loading your media library...</p>
             ) : (
               <>
-                {media.length === 0 ? (
+                {media.length === 0 && !settings.showListsInCollection ? (
                   <EmptyMediaState />
                 ) : (
-                  <MediaGrid
-                    media={displayedMedia.filter(
-                      (item) => selectedCategory === "All" || item.category === selectedCategory,
-                    )}
-                    onUpdate={handleUpdateMedia}
-                    onDelete={handleDeleteMedia}
-                  />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {/* Show media items */}
+                    {displayedMedia
+                      .filter((item) => selectedCategory === "All" || item.category === selectedCategory)
+                      .map((item, index) => (
+                        <MediaCard key={item.id} media={item} onClick={() => setSelectedMedia(item)} index={index} />
+                      ))}
+
+                    {/* Show lists if setting is enabled */}
+                    {settings.showListsInCollection &&
+                      selectedCategory === "All" &&
+                      filteredLists.map((list, index) => (
+                        <motion.div
+                          key={`list-motion-${list.id}`}
+                          variants={fadeInAnimation}
+                          initial="hidden"
+                          animate="visible"
+                          custom={index}
+                          layoutId={`list-${list.id}`}
+                          layout={false}
+                        >
+                          <ListCard key={list.id} list={list} index={index} />
+                        </motion.div>
+                      ))}
+                  </div>
                 )}
+
                 {media.length > 0 &&
                   displayedMedia.filter((item) => selectedCategory === "All" || item.category === selectedCategory)
-                    .length === 0 && <p className="text-center mt-8">No media found in this category.</p>}
+                    .length === 0 &&
+                  !settings.showListsInCollection && (
+                    <p className="text-center mt-8">No media found in this category.</p>
+                  )}
               </>
             )}
 
@@ -301,6 +275,18 @@ export default function Home() {
               isOpen={showImportDialog}
               onClose={() => setShowImportDialog(false)}
               onImport={handleImportMedia}
+            />
+
+            <ListSheet list={selectedList} onClose={() => setSelectedList(null)} />
+
+            <MediaSheet
+              media={selectedMedia}
+              onClose={() => setSelectedMedia(null)}
+              onDelete={deleteMedia}
+              onUpdate={(id, updates) => {
+                updateMedia(id, updates)
+                setSelectedMedia((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev))
+              }}
             />
           </div>
         </motion.div>
