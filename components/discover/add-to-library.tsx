@@ -178,4 +178,3 @@ export function AddToLibrary({ isOpen, onClose, details, mediaType, onAdd }: Add
     </Dialog>
   )
 }
-

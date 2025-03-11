@@ -29,9 +29,12 @@ export async function GET(request: Request) {
   const id = searchParams.get("id")
   const type = searchParams.get("type") as "movie" | "tv"
   const appendToResponse = searchParams.get("append_to_response")
+  const genreId = searchParams.get("genre_id")
+  const tmdbId = searchParams.get("tmdbId")
+  const page = searchParams.get("page") || "1"
 
   try {
-    let data: TMDBSearchResult[] | TMDBDetails
+    let data: any
 
     switch (action) {
       case "search":
@@ -42,8 +45,11 @@ export async function GET(request: Request) {
 
       case "details":
         if (!id || !type) throw new Error("ID and type parameters are required for details")
-        const params: Record<string, string> = {
-          append_to_response: "videos,images", // Add images to the request
+        const params: Record<string, string> = {}
+        if (appendToResponse) {
+          params.append_to_response = appendToResponse
+        } else {
+          params.append_to_response = "videos,images"
         }
         data = (await fetchTMDB(`/${type}/${id}`, params)) as TMDBDetails
         break
@@ -59,6 +65,50 @@ export async function GET(request: Request) {
         data = topRated.results as TMDBSearchResult[]
         break
 
+      case "genres":
+        // Get movie genres
+        const movieGenres = await fetchTMDB("/genre/movie/list")
+        return NextResponse.json(movieGenres)
+
+      case "by_genre":
+        if (!genreId) throw new Error("Genre ID is required for by_genre")
+        const mediaType = type || "movie"
+        const byGenre = await fetchTMDB(`/discover/${mediaType}`, {
+          with_genres: genreId,
+          sort_by: "popularity.desc",
+          page,
+        })
+        data = byGenre
+        break
+
+      case "upcoming":
+        const upcoming = await fetchTMDB("/movie/upcoming", { page })
+        data = upcoming
+        break
+
+      case "hidden_gems":
+        // Get highly rated but less popular movies
+        const hiddenGems = await fetchTMDB("/discover/movie", {
+          sort_by: "vote_average.desc",
+          "vote_count.gte": "100",
+          "vote_count.lte": "1000",
+          page,
+        })
+        data = hiddenGems
+        break
+
+      case "recommendations":
+        if (!tmdbId || !type) throw new Error("TMDB ID and type are required for recommendations")
+        const recommendations = await fetchTMDB(`/${type}/${tmdbId}/recommendations`, { page })
+        data = recommendations
+        break
+
+      case "similar":
+        if (!tmdbId || !type) throw new Error("TMDB ID and type are required for similar")
+        const similar = await fetchTMDB(`/${type}/${tmdbId}/similar`, { page })
+        data = similar
+        break
+
       default:
         throw new Error("Invalid action parameter")
     }
@@ -66,7 +116,10 @@ export async function GET(request: Request) {
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error in TMDB API route:", error)
-    return NextResponse.json({ error: "An error occurred while fetching data from TMDB" }, { status: 500 })
+    return NextResponse.json(
+      { error: (error as Error).message || "An error occurred while fetching data from TMDB" },
+      { status: 500 },
+    )
   }
 }
 

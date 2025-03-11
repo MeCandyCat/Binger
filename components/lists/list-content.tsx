@@ -7,6 +7,7 @@ import { MediaGrid } from "@/components/media-grid"
 import { motion } from "framer-motion"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListViewItem } from "./list-view-item"
+import { MediaSheet } from "@/components/media-sheet"
 import type { List } from "@/types/list"
 import type { Media } from "@/types"
 
@@ -18,8 +19,34 @@ interface ListContentProps {
   onAddMedia: () => void
 }
 
+function EmptyState({ onAddMedia }: { onAddMedia: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="text-center py-12 border-2 border-dashed rounded-lg"
+    >
+      <h2 className="text-xl font-semibold mb-2">No Items Yet</h2>
+      <p className="text-muted-foreground mb-4">Start adding media to your list</p>
+      <Button onClick={onAddMedia}>
+        <Plus className="w-4 h-4 mr-2" />
+        Add Your First Item
+      </Button>
+    </motion.div>
+  )
+}
+
 export function ListContent({ list, libraryMedia, onUpdateItem, onRemoveItem, onAddMedia }: ListContentProps) {
   const [viewMode, setViewMode] = useState<"gallery" | "list">("gallery")
+  const [selectedMedia, setSelectedMedia] = useState<Media | null>(null)
+
+  const handleSelectMedia = (media: Media) => {
+    setSelectedMedia(media)
+  }
+
+  const handleCloseMediaSheet = () => {
+    setSelectedMedia(null)
+  }
 
   return (
     <div>
@@ -49,30 +76,36 @@ export function ListContent({ list, libraryMedia, onUpdateItem, onRemoveItem, on
         viewMode === "gallery" ? (
           <MediaGrid media={list.items} onUpdate={onUpdateItem} onDelete={onRemoveItem} />
         ) : (
-          <div className="space-y-4">
-            {list.items.map((item) => (
+          <div className="space-y-1 rounded-lg border overflow-hidden">
+            {list.items.map((item, index) => (
               <ListViewItem
                 key={item.id}
                 item={item}
+                index={index}
                 libraryItem={libraryMedia.find((m) => m.tmdbId === item.tmdbId && m.type === item.type)}
-                onRemove={onRemoveItem}
+                onRemove={() => onRemoveItem(item.id)}
+                onUpdate={(updates) => onUpdateItem(item.id, updates)}
+                onSelect={handleSelectMedia}
               />
             ))}
           </div>
         )
       ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12 border-2 border-dashed rounded-lg"
-        >
-          <h2 className="text-xl font-semibold mb-2">No Items Yet</h2>
-          <p className="text-muted-foreground mb-4">Start adding media to your list</p>
-          <Button onClick={onAddMedia}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Your First Item
-          </Button>
-        </motion.div>
+        <EmptyState onAddMedia={onAddMedia} />
+      )}
+
+      {selectedMedia && (
+        <MediaSheet
+          media={selectedMedia}
+          isOpen={!!selectedMedia}
+          onClose={handleCloseMediaSheet}
+          onUpdate={(updates) => {
+            const item = list.items.find((i) => i.id === selectedMedia.id)
+            if (item) {
+              onUpdateItem(item.id, updates)
+            }
+          }}
+        />
       )}
     </div>
   )

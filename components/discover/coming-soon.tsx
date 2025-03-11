@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { getTrending } from "@/lib/tmdb"
+import { getUpcoming } from "@/lib/tmdb"
 import { MediaCard } from "@/components/discover/media-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Calendar } from "lucide-react"
 import type { TMDBSearchResult } from "@/types"
-import { TrendingUp } from "lucide-react"
 
 function MediaSkeleton() {
   return (
@@ -23,30 +23,30 @@ function MediaSkeleton() {
   )
 }
 
-export function TrendingSection() {
+export function ComingSoon() {
   const [items, setItems] = useState<TMDBSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchTrending() {
+    async function fetchUpcoming() {
       try {
-        const results = await getTrending()
+        const results = await getUpcoming()
         setItems(results)
       } catch (error) {
-        console.error("Error fetching trending:", error)
+        console.error("Error fetching upcoming:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchTrending()
+    fetchUpcoming()
   }, [])
 
   return (
     <section className="py-6 space-y-4">
       <div className="flex items-center gap-2">
-        <TrendingUp className="h-5 w-5" />
-        <h2 className="text-2xl font-semibold">Trending Now</h2>
+        <Calendar className="h-6 w-6 text-primary" />
+        <h2 className="text-2xl font-semibold">Coming Soon</h2>
       </div>
       <ScrollArea>
         <div className="flex space-x-4 pb-4">
@@ -65,7 +65,14 @@ export function TrendingSection() {
                 transition={{ delay: index * 0.1 }}
                 className="w-[200px] flex-none"
               >
-                <MediaCard item={item} />
+                <MediaCard
+                  item={{ ...item, media_type: "movie" }}
+                  badge={
+                    item.release_date
+                      ? new Date(item.release_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                      : undefined
+                  }
+                />
               </motion.div>
             ))
           )}

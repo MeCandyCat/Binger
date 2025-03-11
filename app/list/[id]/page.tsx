@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLists } from "@/hooks/use-lists"
 import { toast } from "@/components/ui/use-toast"
@@ -21,18 +21,20 @@ import { useMediaLibrary } from "@/hooks/use-media-library"
 import { ThemeProvider } from "@/components/theme-provider"
 import Link from "next/link"
 import { ListAddMediaDialog } from "@/components/lists/list-add-media-dialog"
-import { EditListDialog } from "@/components/lists/edit-list-dialog"
 import { ListHeader } from "@/components/lists/list-header"
 import { ListContent } from "@/components/lists/list-content"
+import { MediaReorganizer } from "@/components/media-reorganizer"
+import { ListActionsSheet } from "@/components/lists/list-actions-sheet"
 
 export default function ListDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { lists, updateList, deleteList, addItemToList, removeItemFromList } = useLists()
   const { media, addMedia } = useMediaLibrary()
   const [list, setList] = useState(lists.find((l) => l.id === params.id))
-  const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showReorganizeDialog, setShowReorganizeDialog] = useState(false)
+  const [showActionsSheet, setShowActionsSheet] = useState(false)
 
   // Update local state when lists change
   useEffect(() => {
@@ -61,8 +63,8 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     )
   }
 
-  const handleSaveEdit = (id: string, updates: Partial<typeof list>) => {
-    updateList(id, updates)
+  const handleSaveEdit = (updates: Partial<typeof list>) => {
+    updateList(list.id, updates)
     toast({
       title: "Success",
       description: "List updated successfully",
@@ -96,6 +98,7 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
         title: "Success",
         description: "Media added to list successfully",
       })
+      // Don't close the dialog
     } catch (error) {
       console.error("Error adding media to list:", error)
       toast({
@@ -109,6 +112,14 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
   const handleUpdateItem = (id: string, updates: Partial<(typeof list.items)[0]>) => {
     const updatedItems = list.items.map((item) => (item.id === id ? { ...item, ...updates } : item))
     updateList(list.id, { items: updatedItems })
+  }
+
+  const handleSaveReorder = (reorderedItems) => {
+    updateList(list.id, { items: reorderedItems })
+    toast({
+      title: "Success",
+      description: "List order updated successfully",
+    })
   }
 
   return (
@@ -126,12 +137,14 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
             </Button>
           </div>
 
-          <ListHeader
-            list={list}
-            onEdit={() => setShowEditDialog(true)}
-            onAddMedia={() => setShowAddDialog(true)}
-            onDelete={() => setShowDeleteDialog(true)}
-          />
+          <ListHeader list={list} onEdit={() => setShowActionsSheet(true)} onAddMedia={() => setShowAddDialog(true)} />
+
+          <div className="flex justify-end mb-6">
+            <Button onClick={() => setShowAddDialog(true)} className="shadow-md">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Media
+            </Button>
+          </div>
 
           <ListContent
             list={list}
@@ -139,13 +152,6 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
             onUpdateItem={handleUpdateItem}
             onRemoveItem={(id) => removeItemFromList(list.id, id)}
             onAddMedia={() => setShowAddDialog(true)}
-          />
-
-          <EditListDialog
-            isOpen={showEditDialog}
-            onClose={() => setShowEditDialog(false)}
-            list={list}
-            onSave={handleSaveEdit}
           />
 
           <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -170,6 +176,22 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
             onClose={() => setShowAddDialog(false)}
             onAddToList={handleAddMedia}
             libraryMedia={media}
+          />
+
+          <MediaReorganizer
+            isOpen={showReorganizeDialog}
+            onClose={() => setShowReorganizeDialog(false)}
+            media={list.items}
+            onSave={handleSaveReorder}
+          />
+
+          <ListActionsSheet
+            isOpen={showActionsSheet}
+            onClose={() => setShowActionsSheet(false)}
+            list={list}
+            onSave={handleSaveEdit}
+            onDelete={() => setShowDeleteDialog(true)}
+            onReorganize={() => setShowReorganizeDialog(true)}
           />
         </div>
       </div>

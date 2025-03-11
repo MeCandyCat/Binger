@@ -64,7 +64,7 @@ export function MediaReorganizer({ isOpen, onClose, media, onSave }: MediaReorga
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Reorganize Media</DialogTitle>
+          <DialogTitle>Reorganize Items</DialogTitle>
         </DialogHeader>
         <div className="flex items-center space-x-2 mb-4">
           <Input
@@ -100,6 +100,9 @@ export function MediaReorganizer({ isOpen, onClose, media, onSave }: MediaReorga
                         >
                           <span {...provided.dragHandleProps}>
                             <GripVertical className="h-5 w-5 text-muted-foreground" />
+                          </span>
+                          <span className="w-6 h-6 flex-shrink-0 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                            {index + 1}
                           </span>
                           <span className="flex-grow truncate">{item.title}</span>
                           <span className={`h-3 w-3 rounded-full ${getCategoryColor(item.category)}`} />

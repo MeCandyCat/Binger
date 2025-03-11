@@ -68,7 +68,9 @@ export function ListPoster({ title, color, itemCount, className = "", aspectRati
 
 function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: number, color: string) {
   // Parse the color to get its RGB components
-  let r = 0, g = 0, b = 0
+  let r = 0,
+    g = 0,
+    b = 0
 
   // Simple color parsing from hex
   if (color.startsWith("#")) {
@@ -81,7 +83,7 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
   // Create a diagonal gradient from original color to a slightly brighter variant
   const bgGradient = ctx.createLinearGradient(0, 0, width, height)
   bgGradient.addColorStop(0, color)
-  
+
   // Create a slightly brighter/different color variant
   const brighterColor = `rgb(${Math.min(r * 1.3, 255)}, ${Math.min(g * 1.3, 255)}, ${Math.min(b * 1.3, 255)})`
   bgGradient.addColorStop(1, brighterColor)
@@ -101,7 +103,7 @@ function drawGridPatternOverlay(ctx: CanvasRenderingContext2D, width: number, he
 
   // Grid parameters
   const gridSize = 20
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"
   ctx.lineWidth = 1
 
   // Draw vertical lines

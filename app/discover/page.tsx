@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { motion } from "framer-motion"
 import { TrendingSection } from "@/components/discover/trending-section"
 import { TrailerShowcase } from "@/components/discover/trailer-showcase"
-import { TopRatedSection } from "@/components/discover/top-rated-section"
+import { GenresExplorer } from "@/components/discover/genres-explorer"
+import { HiddenGems } from "@/components/discover/hidden-gems"
+import { ForYouSection } from "@/components/discover/for-you-section"
 import { ThemeProvider } from "@/components/theme-provider"
 import { NavBar } from "@/components/nav-bar"
 import ErrorBoundary from "@/components/error-boundary"
@@ -14,6 +16,26 @@ import type { TMDBSearchResult } from "@/types"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useMediaLibrary } from "@/hooks/use-media-library"
 import { toast } from "@/components/ui/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+
+function SectionSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-48" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-3">
+            <Skeleton className="aspect-[2/3] w-full rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function DiscoverPage() {
   const { media, addMedia } = useMediaLibrary()
@@ -21,6 +43,12 @@ export default function DiscoverPage() {
   const debouncedQuery = useDebounce(searchQuery, 300)
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [hasRecommendations, setHasRecommendations] = useState(false)
+
+  // Check if user has media for recommendations
+  useEffect(() => {
+    setHasRecommendations(media.length > 0)
+  }, [media])
 
   useEffect(() => {
     async function performSearch() {
@@ -107,11 +135,41 @@ export default function DiscoverPage() {
             {searchQuery ? (
               <MediaGrid items={searchResults} isLoading={isSearching} />
             ) : (
-              <>
-                <TrendingSection />
-                <TrailerShowcase />
-                <TopRatedSection />
-              </>
+              <div className="space-y-8">
+                {/* #1: Explore by Genre */}
+                <Suspense fallback={<SectionSkeleton />}>
+                  <GenresExplorer />
+                </Suspense>
+
+                {/* #2: For You (if available) */}
+                {hasRecommendations && (
+                  <Suspense fallback={<SectionSkeleton />}>
+                    <ForYouSection />
+                  </Suspense>
+                )}
+
+                {/* #3: Featured Trailers */}
+                <Suspense fallback={<div className="h-[400px] w-full rounded-xl bg-muted animate-pulse" />}>
+                  <TrailerShowcase />
+                </Suspense>
+
+                {/* #4: Trending Now */}
+                <Suspense fallback={<SectionSkeleton />}>
+                  <TrendingSection />
+                </Suspense>
+
+                {/* #5: Hidden Gems */}
+                <Suspense fallback={<SectionSkeleton />}>
+                  <HiddenGems />
+                </Suspense>
+
+                {/* For You at the end if not available earlier */}
+                {!hasRecommendations && (
+                  <Suspense fallback={<SectionSkeleton />}>
+                    <ForYouSection />
+                  </Suspense>
+                )}
+              </div>
             )}
           </div>
         </motion.div>

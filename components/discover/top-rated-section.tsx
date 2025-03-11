@@ -7,6 +7,7 @@ import { getTopRated } from "@/lib/tmdb"
 import { MediaCard } from "@/components/discover/media-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { TMDBSearchResult } from "@/types"
+import { Crown } from "lucide-react"
 
 function MediaSkeleton() {
   return (
@@ -45,7 +46,10 @@ export function TopRatedSection() {
     <section className="py-6">
       <Tabs defaultValue="movies">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <h2 className="text-2xl font-semibold">Top Rated</h2>
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5" />
+            <h2 className="text-2xl font-semibold">Top Rated</h2>
+          </div>
           <TabsList className="grid w-full sm:w-[200px] grid-cols-2 p-0 h-auto bg-background gap-1">
             <TabsTrigger
               value="movies"
@@ -109,4 +113,3 @@ export function TopRatedSection() {
     </section>
   )
 }
-

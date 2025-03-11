@@ -1,77 +1,105 @@
-export type Media = {
+export interface Media {
   id: string
   tmdbId: number
   title: string
-  type: "movie" | "tv"
+  overview: string
   posterPath: string
   backdropPath?: string
-  rating: number
-  tmdbRating: number
-  watchedAt: Date
-  runtime: number
-  note?: string
-  category: "Watched" | "Wishlist" | "Streaming"
-  customDuration?: number
+  releaseDate?: string
+  runtime?: number
+  status?: string
+  voteAverage?: number
+  type: "movie" | "tv"
+  genres?: string[]
+  watched: boolean
+  favorite: boolean
+  watchlist: boolean
+  dateAdded: string
+  userRating?: number
+  notes?: string
   seasons?: number
-  episodesPerSeason?: number
-  episodeDuration?: number
-  watchedSeasons?: number
+  episodes?: number
+}
+
+export interface TMDBSearchResult {
+  id: number
+  title?: string
+  name?: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
   release_date?: string
   first_air_date?: string
-  trailerKey?: string | null
-  logo?: string
-}
-
-export type TMDBSearchResult = {
-  id: number
-  title?: string
-  name?: string
-  poster_path: string
-  backdrop_path?: string
-  media_type: string
   vote_average: number
-  overview: string
+  media_type: "movie" | "tv"
+  genre_ids: number[]
 }
 
-export type TMDBLogo = {
-  file_path: string
-  iso_639_1: string
-}
-
-export type TMDBVideo = {
-  id: string
-  key: string
-  name: string
-  site: string
-  size: number
-  type: string
-}
-
-export type TMDBDetails = {
+export interface TMDBDetails {
   id: number
   title?: string
   name?: string
-  poster_path: string
-  backdrop_path?: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
+  release_date?: string
+  first_air_date?: string
   runtime?: number
   episode_run_time?: number[]
-  number_of_seasons?: number
+  status: string
   vote_average: number
-  overview: string
+  genres: { id: number; name: string }[]
   videos?: {
-    results: TMDBVideo[]
+    results: {
+      id: string
+      key: string
+      name: string
+      site: string
+      type: string
+    }[]
   }
   images?: {
-    logos: TMDBLogo[]
+    backdrops: {
+      file_path: string
+      width: number
+      height: number
+    }[]
+    posters: {
+      file_path: string
+      width: number
+      height: number
+    }[]
+    logos: {
+      file_path: string
+      width: number
+      height: number
+      iso_639_1: string
+    }[]
   }
-  release_date?: string
-  first_air_date?: string
+  number_of_seasons?: number
+  number_of_episodes?: number
 }
 
-export type Settings = {
-  showMovieLogos: boolean
-  animateCards: boolean
-  autoplayTrailers: boolean
-  showListsInCollection?: boolean
+export interface Genre {
+  id: number
+  name: string
+}
+
+export interface Settings {
+  theme: "light" | "dark" | "system"
+  cardSize: "small" | "medium" | "large"
+  showWatched: boolean
+  defaultView: "grid" | "list"
+  backdropOpacity: number
+}
+
+export interface Stats {
+  totalMovies: number
+  totalTVShows: number
+  totalWatched: number
+  totalFavorites: number
+  totalWatchlist: number
+  totalRuntime: number
+  genres: { name: string; count: number }[]
 }
 
