@@ -165,4 +165,3 @@ export function CreateListDialog({ isOpen, onClose, onCreate }: CreateListDialog
     </Dialog>
   )
 }
-

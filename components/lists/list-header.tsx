@@ -64,4 +64,3 @@ export function ListHeader({ list, onEdit, onAddMedia }: ListHeaderProps) {
     </motion.div>
   )
 }
-

@@ -57,4 +57,3 @@ export function MediaGrid({ items, isLoading }: MediaGridProps) {
     </div>
   )
 }
-

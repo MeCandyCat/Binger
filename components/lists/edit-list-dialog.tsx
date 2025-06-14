@@ -133,4 +133,3 @@ export function EditListDialog({ isOpen, onClose, list, onSave }: EditListDialog
     </Dialog>
   )
 }
-

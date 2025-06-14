@@ -12,4 +12,3 @@ export interface List {
 }
 
 export type CreateListInput = Omit<List, "id" | "items" | "createdAt" | "updatedAt">
-

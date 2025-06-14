@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Plus, Calendar, Clock, Check, Play } from "lucide-react"
+import { Star, Plus, Calendar, Clock, Check, Play, Copy, ExternalLink } from "lucide-react"
 import { getTMDBDetails } from "@/lib/tmdb"
 import type { TMDBDetails } from "@/types"
 import { AddToLibrary } from "@/components/discover/add-to-library"
@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useMediaLibrary } from "@/hooks/use-media-library"
 import { toast } from "@/components/ui/use-toast"
 import { useSettings } from "@/hooks/use-settings"
+import { useRouter } from "next/navigation"
 
 interface MediaDetailsDialogProps {
   isOpen: boolean
@@ -27,9 +28,26 @@ export function MediaDetailsDialog({ isOpen, onClose, mediaId, mediaType }: Medi
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
   const [logo, setLogo] = useState<string | null>(null)
   const { settings } = useSettings()
+  const router = useRouter()
 
   // Check if media is already in library
   const existingMedia = media.find((m) => m.tmdbId === mediaId && m.type === mediaType)
+
+  // Add a function to copy the link to clipboard
+  const copyLinkToClipboard = () => {
+    const url = `${window.location.origin}/discover/${mediaType}/${mediaId}`
+    navigator.clipboard.writeText(url)
+    toast({
+      title: "Link copied",
+      description: "Media link copied to clipboard",
+    })
+  }
+
+  // Add a function to navigate to the details page
+  const viewDetails = () => {
+    router.push(`/discover/${mediaType}/${mediaId}`)
+    onClose()
+  }
 
   useEffect(() => {
     async function fetchDetails() {
@@ -188,7 +206,7 @@ export function MediaDetailsDialog({ isOpen, onClose, mediaId, mediaType }: Medi
             <div className="p-6 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Overview</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{details.overview}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{details?.overview}</p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -214,6 +232,17 @@ export function MediaDetailsDialog({ isOpen, onClose, mediaId, mediaType }: Medi
                     Add
                   </Button>
                 )}
+
+                {/* Add these new buttons */}
+                <Button onClick={viewDetails} variant="outline" className="w-full sm:w-auto">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Details
+                </Button>
+
+                <Button onClick={copyLinkToClipboard} variant="outline" className="w-full sm:w-auto">
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
               </div>
             </div>
           </ScrollArea>
@@ -232,4 +261,3 @@ export function MediaDetailsDialog({ isOpen, onClose, mediaId, mediaType }: Medi
     </>
   )
 }
-

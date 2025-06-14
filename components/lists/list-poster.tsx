@@ -304,4 +304,3 @@ function drawBottomOverlay(ctx: CanvasRenderingContext2D, width: number, height:
   ctx.fillStyle = bottomOverlay
   ctx.fillRect(0, height - 100, width, 100)
 }
-

@@ -36,4 +36,3 @@ export function MediaGrid({ media, onUpdate, onDelete }: MediaGridProps) {
     </>
   )
 }
-

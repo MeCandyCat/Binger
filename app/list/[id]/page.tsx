@@ -198,4 +198,3 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     </ThemeProvider>
   )
 }
-

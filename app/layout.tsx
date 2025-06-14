@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
+import ClientOnly from "@/components/client-only"
 
 export const metadata: Metadata = {
   title: 'Binger',
@@ -14,18 +15,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-        <body>
+    <html lang='en' suppressHydrationWarning>
+      <body>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <Toaster />
+            <ClientOnly>
+              {children}
+              <Toaster />
+            </ClientOnly>
           </ThemeProvider>
-        </body>
+      </body>
     </html>
   )
 }

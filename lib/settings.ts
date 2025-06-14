@@ -1,12 +1,33 @@
-import type { Settings } from "@/types"
+import type { Settings, StatsPreferences } from "@/types"
 
 const SETTINGS_KEY = "binger-settings"
+
+const DEFAULT_STATS_PREFERENCES: StatsPreferences = {
+  layout: "grid",
+  compactView: false,
+  showIcons: true,
+  timeFormat: "days",
+  colorTheme: "default",
+  stats: {
+    totalWatchTime: { enabled: true, order: 0 },
+    tvShows: { enabled: true, order: 1 },
+    movies: { enabled: true, order: 2 },
+    totalMedia: { enabled: false, order: 3 },
+    averageRating: { enabled: false, order: 4 },
+    favorites: { enabled: false, order: 5 },
+    wishlist: { enabled: false, order: 6 },
+    completionRate: { enabled: false, order: 7 },
+    topGenre: { enabled: false, order: 8 },
+    recentActivity: { enabled: false, order: 9 },
+  },
+}
 
 const DEFAULT_SETTINGS: Settings = {
   showMovieLogos: true,
   animateCards: true,
   autoplayTrailers: true,
   showListsInCollection: false,
+  statsPreferences: DEFAULT_STATS_PREFERENCES,
 }
 
 export function getStoredSettings(): Settings {
@@ -16,7 +37,19 @@ export function getStoredSettings(): Settings {
   if (!stored) return DEFAULT_SETTINGS
 
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } as Settings
+    const parsedSettings = JSON.parse(stored)
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsedSettings,
+      statsPreferences: {
+        ...DEFAULT_STATS_PREFERENCES,
+        ...parsedSettings.statsPreferences,
+        stats: {
+          ...DEFAULT_STATS_PREFERENCES.stats,
+          ...parsedSettings.statsPreferences?.stats,
+        },
+      },
+    } as Settings
   } catch {
     return DEFAULT_SETTINGS
   }
@@ -30,4 +63,3 @@ export function storeSettings(settings: Settings) {
     console.error("Error storing settings in localStorage:", error)
   }
 }
-

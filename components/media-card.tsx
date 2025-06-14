@@ -71,4 +71,3 @@ export function MediaCard({ media, onClick, index }: MediaCardProps) {
     </motion.div>
   )
 }
-

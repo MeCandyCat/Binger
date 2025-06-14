@@ -100,4 +100,3 @@ export function ListViewItem({ item, index, libraryItem, onRemove, onUpdate, onS
     </motion.div>
   )
 }
-

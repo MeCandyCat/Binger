@@ -152,4 +152,3 @@ export function ListSheet({ list, onClose }: ListSheetProps) {
     </Sheet>
   )
 }
-

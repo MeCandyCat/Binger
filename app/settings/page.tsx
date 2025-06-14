@@ -4,10 +4,11 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { NavBar } from "@/components/nav-bar"
 import ErrorBoundary from "@/components/error-boundary"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings2, Eye, Layout, Database } from "lucide-react"
+import { Settings2, Eye, Layout, Database, BarChart3 } from "lucide-react"
 import { DisplayTab } from "@/components/settings/display-tab"
 import { AppearanceTab } from "@/components/settings/appearance-tab"
 import { DataTab } from "@/components/settings/data-tab"
+import { StatsTab } from "@/components/settings/stats-tab"
 import { useTheme } from "next-themes"
 
 export default function SettingsPage() {
@@ -51,6 +52,14 @@ export default function SettingsPage() {
                       <span className="sm:hidden">Look</span>
                     </TabsTrigger>
                     <TabsTrigger
+                      value="stats"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Stats</span>
+                      <span className="sm:hidden">Stats</span>
+                    </TabsTrigger>
+                    <TabsTrigger
                       value="data"
                       className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2"
                     >
@@ -63,6 +72,7 @@ export default function SettingsPage() {
 
                 <AppearanceTab />
                 <DisplayTab />
+                <StatsTab />
                 <DataTab />
               </Tabs>
             </div>
@@ -72,4 +82,3 @@ export default function SettingsPage() {
     </ErrorBoundary>
   )
 }
-

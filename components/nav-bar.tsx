@@ -11,18 +11,7 @@ import { useState } from "react"
 import { CreateListDialog } from "@/components/lists/create-list-dialog"
 
 interface NavBarProps {
-  onAddMedia: (
-    tmdbId: number,
-    type: "movie" | "tv",
-    rating: number,
-    category: "Watched" | "Wishlist" | "Streaming",
-    note?: string,
-    customDuration?: number,
-    seasons?: number,
-    episodesPerSeason?: number,
-    episodeDuration?: number,
-    completedSeasons?: number,
-  ) => Promise<void>
+  onAddMedia: () => void | Promise<void>
   variant?: "default" | "discover"
   searchQuery?: string
   onSearchChange?: (query: string) => void
@@ -96,4 +85,3 @@ export function NavBar({ onAddMedia, variant = "default", searchQuery = "", onSe
     </>
   )
 }
-

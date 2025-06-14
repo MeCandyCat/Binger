@@ -505,4 +505,3 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
     </Sheet>
   )
 }
-

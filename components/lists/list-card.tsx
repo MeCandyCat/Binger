@@ -55,4 +55,3 @@ export function ListCard({ list, index }: ListCardProps) {
     </Link>
   )
 }
-

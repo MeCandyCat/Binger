@@ -110,4 +110,3 @@ export function ListContent({ list, libraryMedia, onUpdateItem, onRemoveItem, on
     </div>
   )
 }
-

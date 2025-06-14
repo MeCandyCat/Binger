@@ -54,4 +54,3 @@ export function SearchSection({ query, onQueryChange }: SearchSectionProps) {
     </div>
   )
 }
-

@@ -73,4 +73,3 @@ export function MediaPreview({ media, children }: MediaPreviewProps) {
     </div>
   )
 }
-

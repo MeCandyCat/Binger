@@ -19,6 +19,14 @@ export interface Media {
   notes?: string
   seasons?: number
   episodes?: number
+  category?: "Watched" | "Streaming" | "Wishlist"
+  tmdbRating?: number
+  rating?: number
+  watchedAt?: string
+  customDuration?: number
+  episodesPerSeason?: number
+  episodeDuration?: number
+  watchedSeasons?: number
 }
 
 export interface TMDBSearchResult {
@@ -85,12 +93,37 @@ export interface Genre {
   name: string
 }
 
+export interface StatsConfig {
+  enabled: boolean
+  order: number
+}
+
+export interface StatsPreferences {
+  layout: "grid" | "horizontal"
+  compactView: boolean
+  showIcons: boolean
+  timeFormat: "days" | "hours" | "minutes"
+  colorTheme: "default" | "vibrant" | "minimal"
+  stats: {
+    totalWatchTime: StatsConfig
+    tvShows: StatsConfig
+    movies: StatsConfig
+    totalMedia: StatsConfig
+    averageRating: StatsConfig
+    favorites: StatsConfig
+    wishlist: StatsConfig
+    completionRate: StatsConfig
+    topGenre: StatsConfig
+    recentActivity: StatsConfig
+  }
+}
+
 export interface Settings {
-  theme: "light" | "dark" | "system"
-  cardSize: "small" | "medium" | "large"
-  showWatched: boolean
-  defaultView: "grid" | "list"
-  backdropOpacity: number
+  showMovieLogos: boolean
+  animateCards: boolean
+  autoplayTrailers: boolean
+  showListsInCollection: boolean
+  statsPreferences: StatsPreferences
 }
 
 export interface Stats {
@@ -102,4 +135,3 @@ export interface Stats {
   totalRuntime: number
   genres: { name: string; count: number }[]
 }
-
