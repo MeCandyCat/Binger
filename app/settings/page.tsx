@@ -24,7 +24,7 @@ export default function SettingsPage() {
           transition={{ duration: 0.5 }}
         >
           <div className="container py-10">
-            <NavBar onAddMedia={async () => {}} />
+            <NavBar />
 
             <div className="grid gap-6">
               <div className="flex items-center space-x-2">

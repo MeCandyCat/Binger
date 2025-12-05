@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { useSettings } from "@/hooks/use-settings"
 import { toast } from "@/components/ui/use-toast"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
@@ -186,6 +187,39 @@ export function StatsTab() {
                   <SelectItem value="minimal">Minimal</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Favorite rating threshold</Label>
+              <p className="text-xs text-muted-foreground">
+                Items rated at or above this value are counted as favorites (in addition to manually favorited items).
+              </p>
+              <div className="flex items-center gap-2 max-w-xs">
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  value={statsPreferences.favoriteThreshold ?? 8}
+                  onChange={(e) => {
+                    const value = Number(e.target.value)
+                    if (Number.isNaN(value)) return
+                    updateStatsPreferences({
+                      favoriteThreshold: Math.min(Math.max(value, 0), 10),
+                    })
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    updateStatsPreferences({
+                      favoriteThreshold: 8,
+                    })
+                  }
+                >
+                  Reset
+                </Button>
+              </div>
             </div>
           </div>
 

@@ -17,12 +17,15 @@ import { useLists } from "@/hooks/use-lists"
 import { useSettings } from "@/hooks/use-settings"
 import { ListSheet } from "@/components/lists/list-sheet"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ListIcon } from "lucide-react"
 import { MediaCard } from "@/components/media-card"
 import { MediaSheet } from "@/components/media-sheet"
 import { ListPoster } from "@/components/lists/list-poster"
 import type { List } from "@/types/list"
+import { EmptyState } from "@/components/ui/empty"
+import { Search } from "lucide-react"
 
 const fadeInAnimation = {
   hidden: { opacity: 0, y: 20 },
@@ -57,6 +60,7 @@ export default function Home() {
     dateAdded: "",
   })
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const [searchQuery, setSearchQuery] = useState("")
   const [isReorganizerOpen, setIsReorganizerOpen] = useState(false)
@@ -154,6 +158,7 @@ export default function Home() {
   }
 
   const displayedMedia = filteredMedia.length > 0 ? filteredMediaBySearch(filteredMedia) : filteredMediaBySearch(media)
+  const categorizedMedia = displayedMedia.filter((item) => selectedCategory === "All" || item.category === selectedCategory)
 
   const handleSaveReorganizedMedia = (newOrder: Media[]) => {
     reorderMedia(newOrder)
@@ -218,7 +223,13 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="container py-10">
-            <NavBar onAddMedia={() => setShowImportDialog(true)} />
+            <NavBar
+              onAddMedia={async (...args) => {
+                await addMedia(...args)
+              }}
+              addMediaDialogOpen={showAddDialog}
+              onAddMediaDialogOpenChange={setShowAddDialog}
+            />
 
             <Stats media={media} />
 
@@ -240,15 +251,35 @@ export default function Home() {
             ) : (
               <>
                 {media.length === 0 && !settings.showListsInCollection ? (
-                  <EmptyMediaState />
+                  <EmptyState
+                    title="Add media to get started"
+                    description="Your collection is empty. Add something to see it here."
+                    action={
+                      <Button onClick={() => setShowAddDialog(true)} size="sm">
+                        Add Media
+                      </Button>
+                    }
+                  />
+                ) : categorizedMedia.length === 0 && searchQuery ? (
+                  <EmptyState
+                    title="No results found"
+                    description="Try a different search term."
+                    icon={<Search className="h-5 w-5" />}
+                    className="mt-8"
+                  />
+                ) : categorizedMedia.length === 0 && !settings.showListsInCollection ? (
+                  <EmptyState
+                    title="No media found in this category"
+                    description="Try changing filters or categories."
+                    icon={<Search className="h-5 w-5" />}
+                    className="mt-8"
+                  />
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {/* Show media items */}
-                    {displayedMedia
-                      .filter((item) => selectedCategory === "All" || item.category === selectedCategory)
-                      .map((item, index) => (
-                        <MediaCard key={item.id} media={item} onClick={() => setSelectedMedia(item)} index={index} />
-                      ))}
+                    {categorizedMedia.map((item, index) => (
+                      <MediaCard key={item.id} media={item} onClick={() => setSelectedMedia(item)} index={index} />
+                    ))}
 
                     {/* Show lists if setting is enabled */}
                     {settings.showListsInCollection &&
@@ -268,13 +299,6 @@ export default function Home() {
                       ))}
                   </div>
                 )}
-
-                {media.length > 0 &&
-                  displayedMedia.filter((item) => selectedCategory === "All" || item.category === selectedCategory)
-                    .length === 0 &&
-                  !settings.showListsInCollection && (
-                    <p className="text-center mt-8">No media found in this category.</p>
-                  )}
               </>
             )}
 

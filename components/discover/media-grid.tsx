@@ -3,6 +3,8 @@
 import { motion } from "framer-motion"
 import { MediaCard } from "@/components/discover/media-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty"
+import { Search } from "lucide-react"
 import type { TMDBSearchResult } from "@/types"
 
 interface MediaGridProps {
@@ -35,10 +37,12 @@ export function MediaGrid({ items, isLoading }: MediaGridProps) {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[300px] text-center space-y-4">
-        <p className="text-lg font-medium">No results found</p>
-        <p className="text-sm text-muted-foreground">Try adjusting your search terms</p>
-      </div>
+      <EmptyState
+        title="No results found"
+        description="Try adjusting your search terms"
+        icon={<Search className="h-5 w-5" />}
+        className="h-[300px]"
+      />
     )
   }
 

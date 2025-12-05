@@ -11,34 +11,47 @@ import { useState } from "react"
 import { CreateListDialog } from "@/components/lists/create-list-dialog"
 import { useMediaLibrary } from "@/hooks/use-media-library"
 
+type AddMediaHandler = (
+  tmdbId: number,
+  type: "movie" | "tv",
+  rating: number,
+  category: "Watched" | "Wishlist" | "Streaming",
+  note?: string,
+  customDuration?: number,
+  seasons?: number,
+  episodesPerSeason?: number,
+  episodeDuration?: number,
+  completedSeasons?: number,
+  logo?: string,
+) => Promise<void>
+
 interface NavBarProps {
-  onAddMedia?: () => void
+  onAddMedia?: AddMediaHandler
+  addMediaDialogOpen?: boolean
+  onAddMediaDialogOpenChange?: (open: boolean) => void
   variant?: "default" | "discover"
   searchQuery?: string
   onSearchChange?: (query: string) => void
 }
 
-export function NavBar({ onAddMedia, variant = "default", searchQuery = "", onSearchChange }: NavBarProps) {
+export function NavBar({
+  onAddMedia,
+  addMediaDialogOpen,
+  onAddMediaDialogOpenChange,
+  variant = "default",
+  searchQuery = "",
+  onSearchChange,
+}: NavBarProps) {
   const pathname = usePathname()
   const isDiscover = pathname === "/discover"
   const isList = pathname.startsWith("/list")
   const [showCreateListDialog, setShowCreateListDialog] = useState(false)
   const { addMedia } = useMediaLibrary()
 
-  const handleAddMedia = async (
-    tmdbId: number,
-    type: "movie" | "tv",
-    rating: number,
-    category: "Watched" | "Wishlist" | "Streaming",
-    note?: string,
-    customDuration?: number,
-    seasons?: number,
-    episodesPerSeason?: number,
-    episodeDuration?: number,
-    completedSeasons?: number,
-    logo?: string,
-  ) => {
-    await addMedia(tmdbId, type, rating, category, note, customDuration, seasons, episodesPerSeason, episodeDuration, completedSeasons, logo)
+  const handleAddMedia: AddMediaHandler = async (...args) => {
+    const add = onAddMedia ?? addMedia
+    await add(...args)
+    return
   }
 
   return (
@@ -92,7 +105,11 @@ export function NavBar({ onAddMedia, variant = "default", searchQuery = "", onSe
                   Create List
                 </Button>
               ) : (
-                onAddMedia && <AddMediaDialog onAdd={handleAddMedia} />
+                <AddMediaDialog
+                  onAdd={handleAddMedia}
+                  open={addMediaDialogOpen}
+                  onOpenChange={onAddMediaDialogOpenChange}
+                />
               )}
             </>
           )}

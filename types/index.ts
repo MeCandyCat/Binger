@@ -114,6 +114,7 @@ export interface StatsPreferences {
   showIcons: boolean
   timeFormat: "days" | "hours" | "minutes"
   colorTheme: "default" | "vibrant" | "minimal"
+  favoriteThreshold: number
   stats: {
     totalWatchTime: StatsConfig
     tvShows: StatsConfig

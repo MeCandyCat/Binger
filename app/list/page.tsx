@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { CreateListDialog } from "@/components/lists/create-list-dialog"
 import { ListCard } from "@/components/lists/list-card"
 import { useLists } from "@/hooks/use-lists"
-import { useMediaLibrary } from "@/hooks/use-media-library"
 import { toast } from "@/components/ui/use-toast"
 import { NavBar } from "@/components/nav-bar"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -15,7 +14,6 @@ import type { CreateListInput } from "@/types/list"
 
 export default function ListsPage() {
   const { lists, createList } = useLists()
-  const { addMedia } = useMediaLibrary()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   const handleCreateList = (input: CreateListInput) => {
@@ -39,7 +37,7 @@ export default function ListsPage() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
         <div className="container py-10">
-          <NavBar onAddMedia={() => setShowCreateDialog(true)} />
+          <NavBar />
 
           <div className="flex justify-between items-center mb-8">
             <div className="space-y-1">

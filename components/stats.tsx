@@ -79,7 +79,11 @@ export function Stats({ media }: StatsProps) {
   const totalShows = media.filter((item) => item.type === "tv" && item.category !== "Wishlist").length
   const totalMovies = media.filter((item) => item.type === "movie" && item.category !== "Wishlist").length
   const totalMedia = totalShows + totalMovies
-  const favorites = media.filter((item) => item.favorite).length
+  const favoritesThreshold = statsPreferences.favoriteThreshold ?? 8
+  const favorites = media.filter((item) => {
+    const ratingValue = item.rating ?? item.userRating ?? 0
+    return item.favorite || ratingValue >= favoritesThreshold
+  }).length
   const wishlist = media.filter((item) => item.category === "Wishlist").length
 
   // Calculate average rating
@@ -175,7 +179,7 @@ export function Stats({ media }: StatsProps) {
       icon: Heart,
       value: <CountUp end={favorites} />,
       unit: "",
-      subtext: "Favorited items",
+      subtext: `Favorited or rated ≥ ${favoritesThreshold}`,
       color: "text-red-600 dark:text-red-400",
     },
     wishlist: {

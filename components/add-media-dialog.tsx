@@ -23,6 +23,8 @@ import { toast } from "@/components/ui/use-toast"
 
 export function AddMediaDialog({
   onAdd,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   onAdd: (
     tmdbId: number,
@@ -37,9 +39,14 @@ export function AddMediaDialog({
     completedSeasons?: number,
     logo?: string,
   ) => Promise<void>
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const { media } = useMediaLibrary()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<TMDBSearchResult[]>([])
   const [loading, setLoading] = useState(false)

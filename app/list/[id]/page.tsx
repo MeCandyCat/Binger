@@ -71,7 +71,7 @@ export default function ListDetailPage({
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <div className="min-h-screen bg-background">
           <div className="container py-6 md:py-10 px-4 md:px-6">
-            <NavBar onAddMedia={() => setShowAddDialog(true)} />
+            <NavBar />
             <div className="text-center py-16">
               <h1 className="text-2xl font-bold mb-4">List not found</h1>
               <Button asChild>
@@ -150,7 +150,7 @@ export default function ListDetailPage({
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
         <div className="container py-6 md:py-10 px-4 md:px-6">
-          <NavBar onAddMedia={() => setShowAddDialog(true)} />
+          <NavBar />
 
           <div className="mb-4">
             <Button asChild variant="ghost" size="sm">

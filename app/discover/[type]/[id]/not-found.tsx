@@ -9,7 +9,7 @@ export default function NotFound() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
         <div className="container py-10">
-          <NavBar onAddMedia={async () => {}} />
+          <NavBar />
           <div className="mb-4">
             <Button asChild variant="ghost" size="sm">
               <Link href="/discover">

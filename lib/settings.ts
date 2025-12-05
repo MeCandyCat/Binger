@@ -8,6 +8,7 @@ const DEFAULT_STATS_PREFERENCES: StatsPreferences = {
   showIcons: true,
   timeFormat: "days",
   colorTheme: "default",
+  favoriteThreshold: 8,
   stats: {
     totalWatchTime: { enabled: true, order: 0 },
     tvShows: { enabled: true, order: 1 },

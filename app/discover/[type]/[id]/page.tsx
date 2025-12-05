@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, use } from "react"
+import { notFound, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,6 @@ import { NavBar } from "@/components/nav-bar"
 import { AddToLibrary } from "@/components/discover/add-to-library"
 import Link from "next/link"
 import { ThemeProvider } from "@/components/theme-provider"
-import { use } from "react"
 
 import { HeroSection } from "@/components/media-detail/hero-section"
 import { ActionButtons } from "@/components/media-detail/action-buttons"
@@ -28,9 +27,8 @@ interface PageProps {
 }
 
 export default function MediaDetailPage({ params }: PageProps) {
-  // Unwrap the params Promise
   const { type, id } = use(params)
-  
+
   const router = useRouter()
   const { media, addMedia } = useMediaLibrary()
   const [details, setDetails] = useState<any>(null)
@@ -46,6 +44,9 @@ export default function MediaDetailPage({ params }: PageProps) {
   // Validate media type
   const mediaType = type === "tv" || type === "movie" ? type : "movie"
   const mediaId = Number.parseInt(id)
+  if (Number.isNaN(mediaId)) {
+    return notFound()
+  }
 
   // Check if media is already in library
   const existingMedia = media.find((m) => m.tmdbId === mediaId && m.type === mediaType)
