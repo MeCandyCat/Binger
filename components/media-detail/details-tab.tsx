@@ -157,7 +157,7 @@ export function DetailsTab({ details, mediaType }: DetailsTabProps) {
         <div>
           <h3 className="text-xl font-semibold mb-4">Production Companies</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {details.production_companies.map((company) => (
+            {details.production_companies.map((company: { id: number; logo_path: string | null; name: string; origin_country?: string }) => (
               <div key={company.id} className="bg-muted/30 p-4 rounded-lg text-center">
                 {company.logo_path ? (
                   <img
@@ -183,7 +183,7 @@ export function DetailsTab({ details, mediaType }: DetailsTabProps) {
         <div>
           <h3 className="text-xl font-semibold mb-4">Production Countries</h3>
           <div className="flex flex-wrap gap-2">
-            {details.production_countries.map((country) => (
+            {details.production_countries.map((country: { iso_3166_1: string; name: string }) => (
               <Badge key={country.iso_3166_1} variant="secondary">
                 {country.name}
               </Badge>

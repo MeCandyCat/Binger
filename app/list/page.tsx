@@ -11,13 +11,14 @@ import { useMediaLibrary } from "@/hooks/use-media-library"
 import { toast } from "@/components/ui/use-toast"
 import { NavBar } from "@/components/nav-bar"
 import { ThemeProvider } from "@/components/theme-provider"
+import type { CreateListInput } from "@/types/list"
 
 export default function ListsPage() {
   const { lists, createList } = useLists()
   const { addMedia } = useMediaLibrary()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
 
-  const handleCreateList = (input) => {
+  const handleCreateList = (input: CreateListInput) => {
     try {
       createList(input)
       toast({
@@ -38,7 +39,7 @@ export default function ListsPage() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
         <div className="container py-10">
-          <NavBar onAddMedia={addMedia} />
+          <NavBar onAddMedia={() => setShowCreateDialog(true)} />
 
           <div className="flex justify-between items-center mb-8">
             <div className="space-y-1">

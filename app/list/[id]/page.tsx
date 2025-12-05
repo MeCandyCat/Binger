@@ -26,28 +26,52 @@ import { ListContent } from "@/components/lists/list-content"
 import { MediaReorganizer } from "@/components/media-reorganizer"
 import { ListActionsSheet } from "@/components/lists/list-actions-sheet"
 
-export default function ListDetailPage({ params }: { params: { id: string } }) {
+export default function ListDetailPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
   const router = useRouter()
   const { lists, updateList, deleteList, addItemToList, removeItemFromList } = useLists()
   const { media, addMedia } = useMediaLibrary()
-  const [list, setList] = useState(lists.find((l) => l.id === params.id))
+  
+  // State declarations
+  const [id, setId] = useState<string>("")
+  const [list, setList] = useState<any>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showReorganizeDialog, setShowReorganizeDialog] = useState(false)
   const [showActionsSheet, setShowActionsSheet] = useState(false)
+  
+  // Handle both sync and async params
+  useEffect(() => {
+    const resolveParams = async () => {
+      if (params && typeof params === 'object' && 'then' in params) {
+        // params is a Promise
+        const resolvedParams = await params
+        setId(resolvedParams.id)
+      } else {
+        // params is a regular object
+        setId((params as { id: string }).id)
+      }
+    }
+    resolveParams()
+  }, [params])
 
   // Update local state when lists change
   useEffect(() => {
-    const currentList = lists.find((l) => l.id === params.id)
-    setList(currentList)
-  }, [lists, params.id])
+    if (id) {
+      const currentList = lists.find((l: any) => l.id === id)
+      setList(currentList)
+    }
+  }, [lists, id])
 
   if (!list) {
     return (
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <div className="min-h-screen bg-background">
           <div className="container py-6 md:py-10 px-4 md:px-6">
-            <NavBar onAddMedia={addMedia} />
+            <NavBar onAddMedia={() => setShowAddDialog(true)} />
             <div className="text-center py-16">
               <h1 className="text-2xl font-bold mb-4">List not found</h1>
               <Button asChild>
@@ -80,10 +104,10 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     })
   }
 
-  const handleAddMedia = (selectedMedia) => {
+  const handleAddMedia = (selectedMedia: any) => {
     try {
       // Check if media already exists in the list
-      const exists = list.items.some((item) => item.id === selectedMedia.id)
+      const exists = list.items.some((item: any) => item.id === selectedMedia.id)
       if (exists) {
         toast({
           title: "Already in List",
@@ -109,12 +133,12 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     }
   }
 
-  const handleUpdateItem = (id: string, updates: Partial<(typeof list.items)[0]>) => {
-    const updatedItems = list.items.map((item) => (item.id === id ? { ...item, ...updates } : item))
+  const handleUpdateItem = (itemId: string, updates: Partial<any>) => {
+    const updatedItems = list.items.map((item: any) => (item.id === itemId ? { ...item, ...updates } : item))
     updateList(list.id, { items: updatedItems })
   }
 
-  const handleSaveReorder = (reorderedItems) => {
+  const handleSaveReorder = (reorderedItems: any) => {
     updateList(list.id, { items: reorderedItems })
     toast({
       title: "Success",
@@ -126,7 +150,7 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
         <div className="container py-6 md:py-10 px-4 md:px-6">
-          <NavBar onAddMedia={addMedia} />
+          <NavBar onAddMedia={() => setShowAddDialog(true)} />
 
           <div className="mb-4">
             <Button asChild variant="ghost" size="sm">
@@ -150,7 +174,7 @@ export default function ListDetailPage({ params }: { params: { id: string } }) {
             list={list}
             libraryMedia={media}
             onUpdateItem={handleUpdateItem}
-            onRemoveItem={(id) => removeItemFromList(list.id, id)}
+            onRemoveItem={(itemId) => removeItemFromList(list.id, itemId)}
             onAddMedia={() => setShowAddDialog(true)}
           />
 

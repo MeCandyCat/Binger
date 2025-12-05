@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, Check } from "lucide-react"
 import type { TMDBSearchResult } from "@/types"
 import { MediaDetailsDialog } from "@/components/discover/media-details-dialog"
 import { useMediaLibrary } from "@/hooks/use-media-library"
+import { useSettings } from "@/hooks/use-settings"
 import { motion } from "framer-motion"
 
 interface MediaCardProps {
@@ -20,6 +22,8 @@ export function MediaCard({ item, variant = "default", badge, logoUrl }: MediaCa
   const [showDetails, setShowDetails] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { media } = useMediaLibrary()
+  const { settings } = useSettings()
+  const router = useRouter()
 
   const aspectRatio = variant === "showcase" ? "aspect-video" : "aspect-[2/3]"
   const rating = item.vote_average?.toFixed(1) || "N/A"
@@ -30,11 +34,19 @@ export function MediaCard({ item, variant = "default", badge, logoUrl }: MediaCa
   // Check if the item is already in the user's library
   const isInLibrary = media.some((m) => m.tmdbId === item.id && m.type === mediaType)
 
+  const handleClick = () => {
+    if (settings.discoverDetailsPreview) {
+      setShowDetails(true)
+    } else {
+      router.push(`/discover/${mediaType}/${item.id}`)
+    }
+  }
+
   return (
     <>
       <Card
         className="group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 hover:scale-95 hover:shadow-xl h-full"
-        onClick={() => setShowDetails(true)}
+        onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -137,12 +149,14 @@ export function MediaCard({ item, variant = "default", badge, logoUrl }: MediaCa
           )}
         </div>
       </Card>
-      <MediaDetailsDialog
-        isOpen={showDetails}
-        onClose={() => setShowDetails(false)}
-        mediaId={item.id}
-        mediaType={mediaType}
-      />
+      {settings.discoverDetailsPreview && (
+        <MediaDetailsDialog
+          isOpen={showDetails}
+          onClose={() => setShowDetails(false)}
+          mediaId={item.id}
+          mediaType={mediaType}
+        />
+      )}
     </>
   )
 }

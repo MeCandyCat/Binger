@@ -13,8 +13,8 @@ import { NavBar } from "@/components/nav-bar"
 import { AddToLibrary } from "@/components/discover/add-to-library"
 import Link from "next/link"
 import { ThemeProvider } from "@/components/theme-provider"
+import { use } from "react"
 
-// Import our new components
 import { HeroSection } from "@/components/media-detail/hero-section"
 import { ActionButtons } from "@/components/media-detail/action-buttons"
 import { OverviewTab } from "@/components/media-detail/overview-tab"
@@ -23,7 +23,14 @@ import { DetailsTab } from "@/components/media-detail/details-tab"
 import { ReviewsTab } from "@/components/media-detail/reviews-tab"
 import { MediaDetailSkeleton } from "@/components/media-detail/media-detail-skeleton"
 
-export default function MediaDetailPage({ params }: { params: { type: string; id: string } }) {
+interface PageProps {
+  params: Promise<{ type: string; id: string }>
+}
+
+export default function MediaDetailPage({ params }: PageProps) {
+  // Unwrap the params Promise
+  const { type, id } = use(params)
+  
   const router = useRouter()
   const { media, addMedia } = useMediaLibrary()
   const [details, setDetails] = useState<any>(null)
@@ -37,8 +44,8 @@ export default function MediaDetailPage({ params }: { params: { type: string; id
   const [reviews, setReviews] = useState<any[]>([])
 
   // Validate media type
-  const mediaType = params.type === "tv" || params.type === "movie" ? params.type : "movie"
-  const mediaId = Number.parseInt(params.id)
+  const mediaType = type === "tv" || type === "movie" ? type : "movie"
+  const mediaId = Number.parseInt(id)
 
   // Check if media is already in library
   const existingMedia = media.find((m) => m.tmdbId === mediaId && m.type === mediaType)
@@ -167,7 +174,7 @@ export default function MediaDetailPage({ params }: { params: { type: string; id
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <div className="min-h-screen bg-background">
           <div className="container py-10">
-            <NavBar onAddMedia={() => {}} />
+            <NavBar />
             <div className="mb-4">
               <Button asChild variant="ghost" size="sm">
                 <Link href="/discover">
@@ -187,7 +194,7 @@ export default function MediaDetailPage({ params }: { params: { type: string; id
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <div className="min-h-screen bg-background">
         <div className="container py-10">
-          <NavBar onAddMedia={() => {}} />
+          <NavBar />
           <div className="mb-4">
             <Button asChild variant="ghost" size="sm">
               <Link href="/discover">

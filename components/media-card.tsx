@@ -37,12 +37,12 @@ export function MediaCard({ media, onClick, index }: MediaCardProps) {
             {media.category === "Streaming" || media.category === "Wishlist" ? (
               <Badge className="bg-black/20 hover:bg-black/30 backdrop-blur-lg text-white flex items-center gap-1">
                 <Star className="w-3 h-3 text-blue-400 fill-current" />
-                <span>{media.tmdbRating.toFixed(1)}</span>
+                <span>{(media.tmdbRating ?? 0).toFixed(1)}</span>
               </Badge>
             ) : (
               <Badge className="bg-black/20 hover:bg-black/30 backdrop-blur-lg text-white flex items-center gap-1">
                 <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                <span>{media.rating.toFixed(1)}</span>
+                <span>{(media.rating ?? 0).toFixed(1)}</span>
               </Badge>
             )}
           </div>

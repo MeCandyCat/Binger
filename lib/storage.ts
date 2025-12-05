@@ -22,11 +22,7 @@ export function getStoredMedia(): Media[] {
 export function storeMedia(media: Media[]) {
   if (typeof window === "undefined") return
   try {
-    const mediaToStore = media.map((item) => ({
-      ...item,
-      watchedAt: item.watchedAt instanceof Date ? item.watchedAt.toISOString() : item.watchedAt,
-    }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mediaToStore))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(media))
   } catch (error) {
     console.error("Error storing media in localStorage:", error)
   }

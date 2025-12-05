@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useSettings } from "@/hooks/use-settings"
@@ -21,67 +21,89 @@ export function DisplayTab() {
     })
   }
 
+  const handleToggleDiscoverPreview = () => {
+    updateSettings({
+      ...settings,
+      discoverDetailsPreview: !settings.discoverDetailsPreview,
+    })
+    toast({
+      title: "Settings updated",
+      description: `Discover details preview is now ${!settings.discoverDetailsPreview ? "enabled" : "disabled"}`,
+    })
+  }
+
   return (
-    <TabsContent value="display" className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Media Display</CardTitle>
-          <CardDescription>Customize how media information is displayed</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show Movie Logos</Label>
-              <p className="text-sm text-muted-foreground">
-                Display movie/show logos instead of text titles when available
-              </p>
+    <Tabs value="display">
+      <TabsContent value="display" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Media Display</CardTitle>
+            <CardDescription>Customize how media information is displayed</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Show Movie Logos</Label>
+                <p className="text-sm text-muted-foreground">
+                  Display movie/show logos instead of text titles when available
+                </p>
+              </div>
+              <Switch checked={settings.showMovieLogos} onCheckedChange={handleToggleMovieLogos} />
             </div>
-            <Switch checked={settings.showMovieLogos} onCheckedChange={handleToggleMovieLogos} />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Animate Cards</Label>
-              <p className="text-sm text-muted-foreground">Enable smooth animations when hovering over media cards</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Discover Details Preview</Label>
+                <p className="text-sm text-muted-foreground">
+                  Show media details in a modal instead of navigating to the full page
+                </p>
+              </div>
+              <Switch checked={settings.discoverDetailsPreview} onCheckedChange={handleToggleDiscoverPreview} />
             </div>
-            <Switch
-              checked={settings.animateCards}
-              onCheckedChange={(checked) => {
-                updateSettings({ ...settings, animateCards: checked })
-              }}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Auto-play Trailers</Label>
-              <p className="text-sm text-muted-foreground">Automatically play trailers when hovering over media</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Animate Cards</Label>
+                <p className="text-sm text-muted-foreground">Enable smooth animations when hovering over media cards</p>
+              </div>
+              <Switch
+                checked={settings.animateCards}
+                onCheckedChange={(checked) => {
+                  updateSettings({ ...settings, animateCards: checked })
+                }}
+              />
             </div>
-            <Switch
-              checked={settings.autoplayTrailers}
-              onCheckedChange={(checked) => {
-                updateSettings({ ...settings, autoplayTrailers: checked })
-              }}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show Lists in Collection</Label>
-              <p className="text-sm text-muted-foreground">
-                Display your lists alongside media in your main collection
-              </p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Auto-play Trailers</Label>
+                <p className="text-sm text-muted-foreground">Automatically play trailers when hovering over media</p>
+              </div>
+              <Switch
+                checked={settings.autoplayTrailers}
+                onCheckedChange={(checked) => {
+                  updateSettings({ ...settings, autoplayTrailers: checked })
+                }}
+              />
             </div>
-            <Switch
-              checked={settings.showListsInCollection || false}
-              onCheckedChange={(checked) => {
-                updateSettings({ ...settings, showListsInCollection: checked })
-                toast({
-                  title: "Settings updated",
-                  description: `Lists in collection are now ${checked ? "enabled" : "disabled"}`,
-                })
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </TabsContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Show Lists in Collection</Label>
+                <p className="text-sm text-muted-foreground">
+                  Display your lists alongside media in your main collection
+                </p>
+              </div>
+              <Switch
+                checked={settings.showListsInCollection || false}
+                onCheckedChange={(checked) => {
+                  updateSettings({ ...settings, showListsInCollection: checked })
+                  toast({
+                    title: "Settings updated",
+                    description: `Lists in collection are now ${checked ? "enabled" : "disabled"}`,
+                  })
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   )
 }

@@ -126,7 +126,6 @@ export default function DiscoverPage() {
         >
           <div className="container py-10">
             <NavBar
-              onAddMedia={handleAddMedia}
               variant="discover"
               searchQuery={searchQuery}
               onSearchChange={handleSearch}

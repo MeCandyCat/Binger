@@ -51,10 +51,10 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
 
   useEffect(() => {
     if (media) {
-      setNote(media.note || "")
-      setDuration(media.customDuration || media.runtime)
+      setNote(media.notes || "")
+      setDuration(media.customDuration || media.runtime || 0)
       setIsCustomDuration(!!media.customDuration)
-      setRating(media.rating)
+      setRating(media.rating || 0)
       setCategory(media.category || "Watched")
       setWatchedSeasons(media.watchedSeasons || 0)
       setSeasons(media.seasons || 0)
@@ -66,7 +66,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
   const handleUpdate = useCallback(() => {
     if (!media) return
     onUpdate(media.id, {
-      note,
+      notes: note,
       customDuration: isCustomDuration ? duration : undefined,
       runtime: media.type === "movie" ? (isCustomDuration ? duration : media.runtime) : media.runtime,
       rating,
@@ -128,8 +128,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
         runtime: media.type === "movie" ? updatedDetails.runtime || media.runtime : media.runtime,
         overview: updatedDetails.overview || media.overview,
         seasons: media.type === "tv" ? updatedDetails.number_of_seasons || media.seasons : media.seasons,
-        trailerKey: trailer?.key || null,
-        logo: logoUrl,
+        trailerKey: trailer?.key || undefined,
       })
     } catch (error) {
       console.error("Error refreshing media data:", error)
@@ -142,10 +141,10 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
     if (isEditing) {
       setIsEditing(false)
       if (media) {
-        setNote(media.note || "")
-        setDuration(media.customDuration || media.runtime)
+        setNote(media.notes || "")
+        setDuration(media.customDuration || media.runtime || 0)
         setIsCustomDuration(!!media.customDuration)
-        setRating(media.rating)
+        setRating(media.rating || 0)
         setCategory(media.category || "Watched")
         setWatchedSeasons(media.watchedSeasons || 0)
         setSeasons(media.seasons || 0)
@@ -175,7 +174,7 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
           </div>
         )}
         {/* Always show TMDB rating if available */}
-        {media?.tmdbRating > 0 && (
+        {media?.tmdbRating && media.tmdbRating > 0 && (
           <div className="flex items-center">
             <Star className="w-4 h-4 text-blue-500 fill-current mr-1" />
             <span className="font-medium">{media.tmdbRating.toFixed(1)}</span>
@@ -225,23 +224,23 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                   className="w-20 sm:w-24 aspect-[2/3] rounded-lg shadow-lg hidden sm:block"
                 />
                 <div className="flex-1">
-                  {settings.showMovieLogos && media.logo ? (
+                  {settings.showMovieLogos && false ? (
                     <img
-                      src={media.logo || "/placeholder.svg"}
-                      alt={media.title}
+                      src="/placeholder.svg"
+                      alt={media?.title || "Media"}
                       className="h-16 object-contain mb-2"
                     />
                   ) : (
-                    <h2 className="text-2xl font-semibold text-white mb-1">{media.title}</h2>
+                    <h2 className="text-2xl font-semibold text-white mb-1">{media?.title || ""}</h2>
                   )}
                   {media.type === "movie" ? (
                     <p className="text-sm text-white/80">
-                      {media.release_date ? new Date(media.release_date).getFullYear() : "Unknown"} •{" "}
+                      {media.releaseDate ? new Date(media.releaseDate).getFullYear() : "Unknown"} •{" "}
                       {media.customDuration || media.runtime} mins
                     </p>
                   ) : (
                     <p className="text-sm text-white/80">
-                      {media.first_air_date ? new Date(media.first_air_date).getFullYear() : "Unknown"} •{" "}
+                      {media.releaseDate ? new Date(media.releaseDate).getFullYear() : "Unknown"} •{" "}
                       {media.seasons} Season{media.seasons !== 1 ? "s" : ""}
                     </p>
                   )}
@@ -259,11 +258,11 @@ export function MediaSheet({ media, onClose, onDelete, onUpdate }: MediaSheetPro
                 <Badge>{media.type === "movie" ? "Movie" : "TV Show"}</Badge>
                 <Badge variant="outline">
                   {media.type === "movie"
-                    ? media.release_date
-                      ? new Date(media.release_date).getFullYear()
+                    ? media.releaseDate
+                      ? new Date(media.releaseDate).getFullYear()
                       : "Unknown"
-                    : media.first_air_date
-                      ? new Date(media.first_air_date).getFullYear()
+                    : media.releaseDate
+                      ? new Date(media.releaseDate).getFullYear()
                       : "Unknown"}
                 </Badge>
                 <Badge variant="outline">

@@ -22,11 +22,12 @@ const DEFAULT_STATS_PREFERENCES: StatsPreferences = {
   },
 }
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   showMovieLogos: true,
   animateCards: true,
   autoplayTrailers: true,
   showListsInCollection: false,
+  discoverDetailsPreview: true,
   statsPreferences: DEFAULT_STATS_PREFERENCES,
 }
 

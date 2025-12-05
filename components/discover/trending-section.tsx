@@ -1,77 +1,68 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { HorizontalSection } from "@/components/discover/horizontal-section"
 import { getTrending } from "@/lib/tmdb"
-import { MediaCard } from "@/components/discover/media-card"
-import { Skeleton } from "@/components/ui/skeleton"
-import type { TMDBSearchResult } from "@/types"
 import { TrendingUp } from "lucide-react"
-
-function MediaSkeleton() {
-  return (
-    <div className="w-[200px] flex-none">
-      <div className="space-y-3">
-        <Skeleton className="aspect-[2/3] w-full rounded-xl" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-      </div>
-    </div>
-  )
-}
+import type { TMDBSearchResult } from "@/types"
 
 export function TrendingSection() {
   const [items, setItems] = useState<TMDBSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
 
-  useEffect(() => {
-    async function fetchTrending() {
-      try {
-        const results = await getTrending()
-        setItems(results)
-      } catch (error) {
-        console.error("Error fetching trending:", error)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchTrending = async (pageNum = 1, append = false) => {
+    if (pageNum === 1) {
+      setIsLoading(true)
+    } else {
+      setIsLoadingMore(true)
     }
 
-    fetchTrending()
+    try {
+      const results = await getTrending()
+      const processedResults = results.map((item) => ({
+        ...item,
+        media_type: item.media_type || (item.title ? "movie" : "tv"),
+      }))
+
+      if (append) {
+        setItems((prev) => [...prev, ...processedResults])
+      } else {
+        setItems(processedResults)
+      }
+
+      setHasMore(processedResults.length >= 20)
+    } catch (error) {
+      console.error("Error fetching trending:", error)
+    } finally {
+      setIsLoading(false)
+      setIsLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTrending(1, false)
   }, [])
 
+  const loadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      fetchTrending(nextPage, true)
+    }
+  }
+
   return (
-    <section className="py-6 space-y-4">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="h-5 w-5" />
-        <h2 className="text-2xl font-semibold">Trending Now</h2>
-      </div>
-      <ScrollArea>
-        <div className="flex space-x-4 pb-4">
-          {isLoading ? (
-            <>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <MediaSkeleton key={i} />
-              ))}
-            </>
-          ) : (
-            items.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="w-[200px] flex-none"
-              >
-                <MediaCard item={item} />
-              </motion.div>
-            ))
-          )}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
-    </section>
+    <HorizontalSection
+      title="Trending Now"
+      icon={<TrendingUp className="h-5 w-5" />}
+      items={items}
+      isLoading={isLoading}
+      onLoadMore={loadMore}
+      hasMore={hasMore}
+      isLoadingMore={isLoadingMore}
+    />
   )
 }

@@ -27,6 +27,7 @@ export interface Media {
   episodesPerSeason?: number
   episodeDuration?: number
   watchedSeasons?: number
+  trailerKey?: string
 }
 
 export interface TMDBSearchResult {
@@ -41,6 +42,7 @@ export interface TMDBSearchResult {
   vote_average: number
   media_type: "movie" | "tv"
   genre_ids: number[]
+  vote_count?: number
 }
 
 export interface TMDBDetails {
@@ -64,6 +66,7 @@ export interface TMDBDetails {
       name: string
       site: string
       type: string
+      official?: boolean
     }[]
   }
   images?: {
@@ -86,6 +89,13 @@ export interface TMDBDetails {
   }
   number_of_seasons?: number
   number_of_episodes?: number
+  credits?: {
+    cast: any[]
+    crew: any[]
+  }
+  reviews?: {
+    results: any[]
+  }
 }
 
 export interface Genre {
@@ -123,6 +133,7 @@ export interface Settings {
   animateCards: boolean
   autoplayTrailers: boolean
   showListsInCollection: boolean
+  discoverDetailsPreview: boolean
   statsPreferences: StatsPreferences
 }
 

@@ -186,7 +186,7 @@ export function OverviewTab({
           <div>
             <h3 className="text-lg font-semibold mb-3">Production</h3>
             <div className="space-y-3">
-              {details.production_companies.slice(0, 3).map((company) => (
+              {details.production_companies.slice(0, 3).map((company: { id: number; logo_path: string | null; name: string }) => (
                 <div key={company.id} className="flex items-center gap-3">
                   {company.logo_path ? (
                     <img

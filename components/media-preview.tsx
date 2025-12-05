@@ -11,7 +11,7 @@ interface MediaPreviewProps {
 
 export function MediaPreview({ media, children }: MediaPreviewProps) {
   const [showVideo, setShowVideo] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const handleMouseEnter = () => {

@@ -97,14 +97,11 @@ export function ListContent({ list, libraryMedia, onUpdateItem, onRemoveItem, on
       {selectedMedia && (
         <MediaSheet
           media={selectedMedia}
-          isOpen={!!selectedMedia}
           onClose={handleCloseMediaSheet}
-          onUpdate={(updates) => {
-            const item = list.items.find((i) => i.id === selectedMedia.id)
-            if (item) {
-              onUpdateItem(item.id, updates)
-            }
+          onUpdate={(id: string, updates: Partial<Media>) => {
+            onUpdateItem(id, updates)
           }}
+          onDelete={() => onRemoveItem(selectedMedia.id)}
         />
       )}
     </div>

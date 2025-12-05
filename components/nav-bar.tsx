@@ -9,9 +9,10 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { CreateListDialog } from "@/components/lists/create-list-dialog"
+import { useMediaLibrary } from "@/hooks/use-media-library"
 
 interface NavBarProps {
-  onAddMedia: () => void | Promise<void>
+  onAddMedia?: () => void
   variant?: "default" | "discover"
   searchQuery?: string
   onSearchChange?: (query: string) => void
@@ -22,6 +23,23 @@ export function NavBar({ onAddMedia, variant = "default", searchQuery = "", onSe
   const isDiscover = pathname === "/discover"
   const isList = pathname.startsWith("/list")
   const [showCreateListDialog, setShowCreateListDialog] = useState(false)
+  const { addMedia } = useMediaLibrary()
+
+  const handleAddMedia = async (
+    tmdbId: number,
+    type: "movie" | "tv",
+    rating: number,
+    category: "Watched" | "Wishlist" | "Streaming",
+    note?: string,
+    customDuration?: number,
+    seasons?: number,
+    episodesPerSeason?: number,
+    episodeDuration?: number,
+    completedSeasons?: number,
+    logo?: string,
+  ) => {
+    await addMedia(tmdbId, type, rating, category, note, customDuration, seasons, episodesPerSeason, episodeDuration, completedSeasons, logo)
+  }
 
   return (
     <>
@@ -74,7 +92,7 @@ export function NavBar({ onAddMedia, variant = "default", searchQuery = "", onSe
                   Create List
                 </Button>
               ) : (
-                <AddMediaDialog onAdd={onAddMedia} />
+                onAddMedia && <AddMediaDialog onAdd={handleAddMedia} />
               )}
             </>
           )}

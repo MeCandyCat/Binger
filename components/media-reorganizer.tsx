@@ -5,6 +5,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
+
+// Type definitions for react-beautiful-dnd
+interface DropResult {
+  destination: { index: number; droppableId: string } | null
+  source: { index: number; droppableId: string }
+  draggableId: string
+  type: string
+  reason: string
+}
+
+interface DroppableProvided {
+  innerRef: (element: HTMLElement | null) => void
+  droppableProps: {
+    [key: string]: unknown
+  }
+  placeholder: JSX.Element | null
+}
+
+interface DraggableProvided {
+  innerRef: (element: HTMLElement | null) => void
+  draggableProps: {
+    [key: string]: unknown
+  }
+  dragHandleProps: {
+    [key: string]: unknown
+  } | null
+}
 import { GripVertical } from "lucide-react"
 import type { Media } from "@/types"
 import { Input } from "@/components/ui/input"
@@ -26,7 +53,7 @@ export function MediaReorganizer({ isOpen, onClose, media, onSave }: MediaReorga
     setReorderedMedia(media)
   }, [media])
 
-  const onDragEnd = (result: any) => {
+  const onDragEnd = (result: DropResult) => {
     if (!result.destination) return
 
     const items = Array.from(reorderedMedia)
@@ -47,7 +74,7 @@ export function MediaReorganizer({ isOpen, onClose, media, onSave }: MediaReorga
     return matchesFilter && matchesCategory
   })
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category?: string) => {
     switch (category) {
       case "Streaming":
         return "bg-purple-500"
@@ -73,7 +100,7 @@ export function MediaReorganizer({ isOpen, onClose, media, onSave }: MediaReorga
             onChange={(e) => setFilter(e.target.value)}
             className="flex-grow"
           />
-          <Select value={categoryFilter} onValueChange={(value: any) => setCategoryFilter(value)}>
+          <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as typeof categoryFilter)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
@@ -88,11 +115,11 @@ export function MediaReorganizer({ isOpen, onClose, media, onSave }: MediaReorga
         <ScrollArea className="h-[400px] w-full pr-4">
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="media-list">
-              {(provided) => (
+              {(provided: DroppableProvided) => (
                 <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                   {filteredMedia.map((item, index) => (
                     <Draggable key={item.id} draggableId={item.id} index={index}>
-                      {(provided) => (
+                      {(provided: DraggableProvided) => (
                         <li
                           ref={provided.innerRef}
                           {...provided.draggableProps}

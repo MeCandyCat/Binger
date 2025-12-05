@@ -80,7 +80,7 @@ export function HeroSection({ details, mediaType, logo }: HeroSectionProps) {
               </div>
             </div>
             <div className="flex flex-wrap gap-1 sm:gap-2">
-              {details.genres?.slice(0, 3).map((genre) => (
+              {details.genres?.slice(0, 3).map((genre: { id: number; name: string }) => (
                 <Badge key={genre.id} variant="outline" className="bg-black/20 text-white border-white/20 text-xs">
                   {genre.name}
                 </Badge>

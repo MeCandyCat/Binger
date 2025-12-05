@@ -11,7 +11,7 @@ interface StatsProps {
   media: Media[]
 }
 
-const CountUp = ({ end, duration = 2 }) => {
+const CountUp = ({ end, duration = 2 }: { end: number; duration?: number }) => {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export function Stats({ media }: StatsProps) {
   const completionRate = streamingShows.length > 0 ? (completedShows / streamingShows.length) * 100 : 0
 
   // Find top genre
-  const genreCounts = {}
+  const genreCounts: Record<string, number> = {}
   media.forEach((item) => {
     item.genres?.forEach((genre) => {
       genreCounts[genre] = (genreCounts[genre] || 0) + 1
@@ -216,7 +216,7 @@ export function Stats({ media }: StatsProps) {
   const enabledStats = Object.entries(statsPreferences.stats)
     .filter(([, config]) => config.enabled)
     .sort(([, a], [, b]) => a.order - b.order)
-    .map(([key]) => ({ key, ...allStats[key] }))
+    .map(([key]) => ({ key, ...allStats[key as keyof typeof allStats] }))
 
   if (enabledStats.length === 0) {
     return null

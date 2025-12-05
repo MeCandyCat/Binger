@@ -108,7 +108,7 @@ export function MediaDetailsDialog({ isOpen, onClose, mediaId, mediaType }: Medi
         episodesPerSeason,
         episodeDuration,
         completedSeasons,
-        logo, // Pass the logo here
+        logo || undefined, // Pass the logo here
       )
       toast({
         title: "Success",

@@ -22,10 +22,11 @@ import { ListIcon } from "lucide-react"
 import { MediaCard } from "@/components/media-card"
 import { MediaSheet } from "@/components/media-sheet"
 import { ListPoster } from "@/components/lists/list-poster"
+import type { List } from "@/types/list"
 
 const fadeInAnimation = {
   hidden: { opacity: 0, y: 20 },
-  visible: (i) => ({
+  visible: (i: number) => ({
     opacity: 1,
     y: 0,
     transition: {
@@ -35,7 +36,7 @@ const fadeInAnimation = {
   }),
 }
 
-export function EmptyMediaState() {
+function EmptyMediaState() {
   return (
     <div className="text-center p-8">
       <h2 className="text-2xl font-semibold mb-4">Your collection is empty</h2>
@@ -59,7 +60,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All")
   const [searchQuery, setSearchQuery] = useState("")
   const [isReorganizerOpen, setIsReorganizerOpen] = useState(false)
-  const [selectedList, setSelectedList] = useState(null)
+  const [selectedList, setSelectedList] = useState<List | null>(null)
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null)
 
   // Load initial media and handle loading state
@@ -74,25 +75,31 @@ export default function Home() {
     }
   }, [activeFilters]) // Updated dependency
 
-  const applyFilters = (newFilters) => {
+  const applyFilters = (newFilters: { tmdbRating: string; userRating: string; dateAdded: string }) => {
     setActiveFilters(newFilters)
     const filtered = [...media] // Use the current media array
 
     if (newFilters.tmdbRating) {
       filtered.sort((a, b) =>
-        newFilters.tmdbRating === "Top Rated" ? b.tmdbRating - a.tmdbRating : a.tmdbRating - b.tmdbRating,
+        newFilters.tmdbRating === "Top Rated"
+          ? (b.tmdbRating ?? 0) - (a.tmdbRating ?? 0)
+          : (a.tmdbRating ?? 0) - (b.tmdbRating ?? 0),
       )
     }
 
     if (newFilters.userRating) {
-      filtered.sort((a, b) => (newFilters.userRating === "Top Rated" ? b.rating - a.rating : a.rating - b.rating))
+      filtered.sort((a, b) =>
+        newFilters.userRating === "Top Rated"
+          ? (b.rating ?? 0) - (a.rating ?? 0)
+          : (a.rating ?? 0) - (b.rating ?? 0),
+      )
     }
 
     if (newFilters.dateAdded) {
       filtered.sort((a, b) =>
         newFilters.dateAdded === "Latest"
-          ? new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime()
-          : new Date(a.watchedAt).getTime() - new Date(b.watchedAt).getTime(),
+          ? new Date(b.watchedAt ?? "").getTime() - new Date(a.watchedAt ?? "").getTime()
+          : new Date(a.watchedAt ?? "").getTime() - new Date(b.watchedAt ?? "").getTime(),
       )
     }
 
@@ -162,7 +169,7 @@ export default function Home() {
   )
 
   // Render a list card for the collection view
-  const ListCard = ({ list, index }) => {
+  const ListCard = ({ list, index }: { list: List; index: number }) => {
     return (
       <div key={`list-${list.id}`}>
         <Card
@@ -211,7 +218,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
         >
           <div className="container py-10">
-            <NavBar onAddMedia={addMedia} />
+            <NavBar onAddMedia={() => setShowImportDialog(true)} />
 
             <Stats media={media} />
 

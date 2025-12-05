@@ -22,9 +22,7 @@ export function ListViewItem({ item, index, libraryItem, onRemove, onUpdate, onS
   const displayItem = libraryItem || item
   const releaseYear = displayItem.releaseDate
     ? new Date(displayItem.releaseDate).getFullYear()
-    : displayItem.first_air_date
-      ? new Date(displayItem.first_air_date).getFullYear()
-      : null
+    : null
 
   return (
     <motion.div
@@ -68,16 +66,16 @@ export function ListViewItem({ item, index, libraryItem, onRemove, onUpdate, onS
           </div>
 
           <div className="flex items-center gap-2">
-            {displayItem.tmdbRating > 0 && (
+            {(displayItem.tmdbRating ?? 0) > 0 && (
               <Badge variant="outline" className="flex items-center gap-1 border-blue-400">
                 <Star className="w-3 h-3 text-blue-400 fill-current" />
-                <span>{displayItem.tmdbRating.toFixed(1)}</span>
+                <span>{(displayItem.tmdbRating ?? 0).toFixed(1)}</span>
               </Badge>
             )}
-            {(libraryItem?.rating || displayItem.rating) > 0 && (
+            {((libraryItem?.rating ?? displayItem.rating) ?? 0) > 0 && (
               <Badge variant="outline" className="flex items-center gap-1 border-yellow-400">
                 <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                <span>{(libraryItem?.rating || displayItem.rating).toFixed(1)}</span>
+                <span>{((libraryItem?.rating ?? displayItem.rating) ?? 0).toFixed(1)}</span>
               </Badge>
             )}
           </div>

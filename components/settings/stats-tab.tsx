@@ -11,7 +11,7 @@ import { useSettings } from "@/hooks/use-settings"
 import { toast } from "@/components/ui/use-toast"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { GripVertical, Clock, Film, Tv, Star, Heart, Bookmark, TrendingUp, Tag, Activity } from "lucide-react"
-import type { StatsPreferences } from "@/types"
+import type { StatsPreferences, StatsConfig } from "@/types"
 
 const STAT_ICONS = {
   totalWatchTime: Clock,
@@ -81,12 +81,12 @@ export function StatsTab() {
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    const newStats = {}
+    const newStats: Record<string, StatsConfig> = {}
     items.forEach(([key, value], index) => {
       newStats[key] = { ...value, order: index }
     })
 
-    updateStatsPreferences({ stats: newStats })
+    updateStatsPreferences({ stats: newStats as StatsPreferences["stats"] })
   }
 
   const resetToDefaults = () => {

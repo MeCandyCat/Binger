@@ -52,9 +52,9 @@ export function ListActionsSheet({ isOpen, onClose, list, onSave, onDelete, onRe
 
     onSave({
       name,
-      description: description || null,
+      description: description || undefined,
       color,
-      poster: poster || null,
+      poster: poster || undefined,
     })
   }
 
